@@ -70,7 +70,7 @@ prompt_input() {
   local question="$1" default="$2" result
   if $NON_INTERACTIVE; then echo "$default"; return; fi
   printf "  ${BOLD}%s${RESET} [${CYAN}%s${RESET}]: " "$question" "$default" >&2
-  read -r result
+  read -r result < /dev/tty
   echo "${result:-$default}"
 }
 
@@ -84,7 +84,7 @@ prompt_confirm() {
   else
     printf "  ${BOLD}%s${RESET} [y/${RED}N${RESET}]: " "$question"
   fi
-  read -r result
+  read -r result < /dev/tty
   result="${result:-$default}"
   lower=$(echo "$result" | tr '[:upper:]' '[:lower:]')
   [[ "$lower" == "y" || "$lower" == "yes" ]]
@@ -92,17 +92,17 @@ prompt_confirm() {
 
 prompt_language() {
   if [[ -n "$WIKI_LANG" ]]; then echo "$WIKI_LANG"; return; fi
-  if $NON_INTERACTIVE; then echo "zh"; return; fi
+  if $NON_INTERACTIVE; then echo "en"; return; fi
 
   printf "\n  ${BOLD}Wiki language / Wiki 语言:${RESET}\n" >&2
-  printf "    ${CYAN}1${RESET}) 中文 ${DIM}(default)${RESET}\n" >&2
-  printf "    ${CYAN}2${RESET}) English\n" >&2
+  printf "    ${CYAN}1${RESET}) English ${DIM}(default)${RESET}\n" >&2
+  printf "    ${CYAN}2${RESET}) 中文\n" >&2
   printf "  ${BOLD}Choose${RESET} [${CYAN}1${RESET}]: " >&2
   local choice
-  read -r choice
+  read -r choice < /dev/tty
   case "$choice" in
-    2|en|english|English) echo "en" ;;
-    *) echo "zh" ;;
+    2|zh|chinese) echo "zh" ;;
+    *) echo "en" ;;
   esac
 }
 
@@ -337,7 +337,7 @@ install_git() {
       xcode-select --install 2>/dev/null || true
       if ! $NON_INTERACTIVE; then
         printf "  Press Enter after Xcode CLI Tools installation completes..."
-        read -r
+        read -r < /dev/tty
       fi
       ;;
     linux)

@@ -1,39 +1,39 @@
-[English](./README.en.md) | 简体中文
+English | [简体中文](./README.zh-CN.md)
 
 # llm-wiki-starter
 
-一行命令创建 LLM Wiki 知识库 —— 基于 [Andrej Karpathy 的 LLM Wiki 模式](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)。
+Create an LLM Wiki knowledge base in one command — based on [Andrej Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash
 ```
 
-## 什么是 LLM Wiki？
+## What is LLM Wiki?
 
-传统 RAG 每次查询都从零开始检索知识。LLM Wiki 不同 —— LLM **增量式地构建和维护一个持久化的 wiki**，交叉引用自动建立，矛盾被标记，综合分析持续更新。每次添加新资料都会让 wiki 更丰富。
+Traditional RAG discovers knowledge from scratch on every query. LLM Wiki is different — the LLM **incrementally builds and maintains a persistent wiki**, where cross-references are established, contradictions are flagged, and synthesis is continuously updated. Each new source makes the wiki richer.
 
-**三层架构**：`raw/`（不可变源文档）→ `wiki/`（LLM 维护）→ Schema（`AGENTS.md`）
+**Three-layer architecture**: `raw/` (immutable sources) → `wiki/` (LLM-maintained) → Schema (`AGENTS.md`)
 
-**三大操作**：Ingest（摄取）→ Query（查询）→ Lint（巡检）
+**Three operations**: Ingest → Query → Lint
 
-## 安装
+## Install
 
-### 一键安装
+### One-line install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash
 ```
 
-安装程序会：
-1. 创建 wiki 目录结构
-2. 检测系统已安装的工具
-3. 展示安装计划并询问确认
-4. 安装缺少的工具（Obsidian、插件、Node.js、Claude Code、Skills、Git）
-5. 初始化 Git 仓库（如果 Git 可用）
+The installer will:
+1. Create the wiki directory structure
+2. Detect what's already installed on your system
+3. Show an installation plan and ask for confirmation
+4. Install missing tools (Obsidian, plugins, Node.js, Claude Code, Skills, Git)
+5. Initialize a Git repository (if Git is available)
 
-如果拒绝自动安装，脚本会打印手动安装指南及官方链接。
+If you decline installation, the script prints a manual install guide with official links.
 
-### 手动克隆
+### Manual clone
 
 ```bash
 git clone https://github.com/eleven-net-cn/llm-wiki-starter my-wiki
@@ -41,137 +41,137 @@ cd my-wiki
 bash install.sh
 ```
 
-脚本会检测到当前在模板仓库内，自动跳过下载步骤。
+The script detects it's inside the template repo and skips the download step.
 
-### 参数
+### Options
 
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| `--name <name>` | Wiki 名称 | `my-wiki` |
-| `--dir <directory>` | 目标目录 | `./<name>` |
-| `--lang <zh\|en>` | Wiki 语言 | `zh` |
-| `--non-interactive` | 跳过所有提示，使用默认值 | - |
-| `--skip-install` | 只创建结构，跳过工具安装 | - |
+| Option | Description | Default |
+|--------|-------------|--------|
+| `--name <name>` | Wiki name | `my-wiki` |
+| `--dir <directory>` | Target directory | `./<name>` |
+| `--lang <zh\|en>` | Wiki language | `zh` |
+| `--non-interactive` | Skip all prompts, use defaults | - |
+| `--skip-install` | Only create structure, skip tool installation | - |
 
-环境变量 `LLM_WIKI_DIR` 也可以指定目标目录。
+Environment variable `LLM_WIKI_DIR` can also specify the target directory.
 
 ```bash
-# 非交互式安装
+# Non-interactive install
 bash install.sh --non-interactive --name my-ai-wiki
 
-# 英文 wiki
+# English wiki
 bash install.sh --lang en --name my-wiki
 
-# 仅创建结构（CI / 快速测试）
+# Structure only (CI / quick test)
 bash install.sh --name test-wiki --dir /tmp/test --skip-install
 ```
 
-## 快速开始
+## Quick Start
 
 ```bash
-# 1. 安装
+# 1. Install
 curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash
 
-# 2. 用 Obsidian 打开
+# 2. Open in Obsidian
 cd my-wiki && open -a Obsidian .
 
-# 3. 启动 AI Agent
+# 3. Start AI agent
 claude
 
-# 4. 摄取第一份资料
-> 摄取这篇文章：https://example.com/some-article
+# 4. Ingest your first resource
+> Ingest this article: https://example.com/some-article
 
-# 5. 查询知识库
-> X 和 Y 之间有什么关系？
+# 5. Query your wiki
+> What is the relationship between X and Y?
 
-# 6. 运行健康检查
-> 运行一次 wiki 巡检
+# 6. Run health check
+> Run a lint check on the wiki
 ```
 
-## 生成的目录结构
+## Generated Structure
 
 ```
 my-wiki/
-├── raw/                     # 不可变的源文档
-│   ├── 收件箱/               # Web Clipper 收件箱
-│   ├── <领域>/               # 按知识领域组织
-│   └── assets/              # 图片、附件
-├── wiki/                    # LLM 维护的知识库
-│   ├── <领域>/               # 领域编译页
-│   ├── 概念/                 # 概念定义页
-│   ├── 资料摘要/             # 资料摘要页
-│   ├── 综合分析/             # 交叉分析
-│   ├── 归档/                 # 已归档页面
-│   ├── assets/excalidraw/   # 图表
-│   ├── Wiki 目录.md          # 内容目录
-│   ├── 操作日志.md           # 操作时间线
-│   └── 知识库概览.md         # 导航入口
-├── canvas/                  # JSON Canvas 可视化地图
-├── CLAUDE.md                # Claude Code 规范（导入 AGENTS.md）
-├── AGENTS.md                # 共享 wiki 规范（唯一真相源）
+├── raw/                     # Immutable source materials
+│   ├── inbox/               # Web Clipper inbox
+│   ├── <domain>/            # Organized by knowledge domain
+│   └── assets/              # Images, attachments
+├── wiki/                    # LLM-maintained knowledge base
+│   ├── <domain>/            # Domain-specific compiled pages
+│   ├── concepts/            # Concept definition pages
+│   ├── summaries/           # Source material summaries
+│   ├── synthesis/           # Cross-cutting analysis
+│   ├── archived/            # Deprecated pages
+│   ├── assets/excalidraw/   # Diagrams
+│   ├── Index.md             # Content index
+│   ├── Changelog.md         # Operation timeline
+│   └── Overview.md          # Landing page
+├── canvas/                  # JSON Canvas visual maps
+├── CLAUDE.md                # Claude Code schema (imports AGENTS.md)
+├── AGENTS.md                # Shared wiki schema (SSOT)
 └── README.md
 ```
 
-领域目录由 LLM 在首次摄取时自动创建。
+Domain directories are created automatically by the LLM during the first ingest.
 
-## 安装内容
+## What Gets Installed
 
-### 工具
+### Tools
 
-| 工具 | 用途 | 安装方式 |
-|------|------|----------|
-| **Obsidian** | Wiki 编辑器和查看器 | `brew install --cask obsidian` / snap |
-| **Node.js** | Claude Code 和 Skills CLI 依赖 | brew / apt / dnf |
-| **Claude Code** | AI Agent（推荐） | `npm install -g @anthropic-ai/claude-code` |
-| **Git** | 版本控制（可选） | xcode-select / brew / apt |
+| Tool | Purpose | Install method |
+|------|---------|---------------|
+| **Obsidian** | Wiki editor & viewer | `brew install --cask obsidian` / snap |
+| **Node.js** | Required for Claude Code & Skills CLI | brew / apt / dnf |
+| **Claude Code** | AI agent (recommended) | `npm install -g @anthropic-ai/claude-code` |
+| **Git** | Version control (optional) | xcode-select / brew / apt |
 
-### Obsidian 插件
+### Obsidian Plugins
 
-| 插件 | 用途 | 优先级 |
-|------|------|--------|
-| **Dataview** | 基于 frontmatter 的 SQL 风格查询 | 必要 |
-| **Templater** | 模板系统 | 必要 |
-| **Obsidian Git** | 自动 git 提交/推送 | 必要（需 Git） |
-| **Linter** | Markdown 格式化 | 必要 |
-| **Custom Sort** | 通过 sortspec 控制文件浏览器排序 | 必要 |
-| **Tag Wrangler** | 标签管理 | 推荐 |
-| **Strange New Worlds** | 显示 wikilink 引用计数 | 推荐 |
-| **Homepage** | 设置首页 | 推荐 |
+| Plugin | Purpose | Priority |
+|--------|---------|----------|
+| **Dataview** | SQL-like queries on frontmatter | Required |
+| **Templater** | Template system | Required |
+| **Obsidian Git** | Auto git commit/push | Required (if Git available) |
+| **Linter** | Markdown formatting | Required |
+| **Custom Sort** | File explorer ordering via sortspec | Required |
+| **Tag Wrangler** | Tag management | Recommended |
+| **Strange New Worlds** | Show wikilink reference counts | Recommended |
+| **Homepage** | Set a landing page | Recommended |
 
 ### Claude Code Skills
 
-通过 [Skills CLI](https://github.com/vercel-labs/skills) 全局安装（`npx skills add -g -y`），自动链接到所有已检测的 Agent。
+Installed globally via [Skills CLI](https://github.com/vercel-labs/skills) (`npx skills add -g -y`), auto-linked to all detected agents.
 
-| Skills | 用途 |
-|--------|------|
-| **[kepano/obsidian-skills](https://github.com/kepano/obsidian-skills)** | Obsidian markdown、CLI 交互、网页清洗（defuddle） |
-| **[axtonliu/visual-skills](https://github.com/axtonliu/axton-obsidian-visual-skills)** | Excalidraw 图表、Mermaid 可视化、Canvas 地图 |
+| Skills | Purpose |
+|--------|---------|
+| **[kepano/obsidian-skills](https://github.com/kepano/obsidian-skills)** | Obsidian markdown, CLI interaction, web scraping (defuddle) |
+| **[axtonliu/visual-skills](https://github.com/axtonliu/axton-obsidian-visual-skills)** | Excalidraw diagrams, Mermaid charts, Canvas maps |
 
-### 浏览器扩展（推荐）
+### Browser Extension (Recommended)
 
-| 扩展 | 用途 |
-|------|------|
-| **[Obsidian Web Clipper](https://chromewebstore.google.com/detail/obsidian-web-clipper/cnjifjpddelmedmihgijeibhnjfabmlf)** | 将网页文章直接剪藏到 `raw/收件箱/` 供 LLM 摄取 |
+| Extension | Purpose |
+|-----------|----------|
+| **[Obsidian Web Clipper](https://chromewebstore.google.com/detail/obsidian-web-clipper/cnjifjpddelmedmihgijeibhnjfabmlf)** | Clip web articles directly to `raw/inbox/` for LLM ingestion |
 
-## 支持的 AI Agent
+## Supported AI Agents
 
-生成的 Schema 兼容以下 Agent：
+The generated schema works with any of these agents:
 
-| Agent | Schema 文件 | 链接 |
+| Agent | Schema file | Link |
 |-------|-------------|------|
-| **Claude Code** | `CLAUDE.md` → 导入 `AGENTS.md` | [claude.ai/claude-code](https://claude.ai/claude-code) |
-| **OpenCode** 等更多 | `AGENTS.md` | [github.com/anomalyco/opencode](https://github.com/anomalyco/opencode) |
+| **Claude Code** | `CLAUDE.md` → imports `AGENTS.md` | [claude.ai/claude-code](https://claude.ai/claude-code) |
+| **OpenCode** and more | `AGENTS.md` | [github.com/anomalyco/opencode](https://github.com/anomalyco/opencode) |
 
-## 对比
+## Comparison
 
-| | llm-wiki-starter | [llm-wikid](https://github.com/shannhk/llm-wikid) | 手动搭建 |
+| | llm-wiki-starter | [llm-wikid](https://github.com/shannhk/llm-wikid) | Manual setup |
 |---|---|---|---|
-| 搭建时间 | **5 分钟** | 20 分钟 | 2–4 小时 |
-| 语言 | 中文 / 英文 | 英文 | 自定义 |
-| 领域 | 通用（不限领域） | 内容/营销 | 自写 Schema |
-| 架构 | 三层（raw/wiki/schema） | 两层（KBL+BF） | 自定义 |
-| Agent 支持 | Claude Code + OpenCode + Gemini CLI | Claude Code | 自行配置 |
-| 套件安装 | 全自动（Obsidian + 插件 + Skills） | 手动 | 手动 |
+| Setup time | **5 minutes** | 20 minutes | 2–4 hours |
+| Language | Chinese / English | English | Custom |
+| Domain | Domain-agnostic | Content/marketing | Write your own schema |
+| Architecture | Three-layer (raw/wiki/schema) | Two-layer (KBL+BF) | Custom |
+| Agent support | Claude Code + OpenCode + Gemini CLI | Claude Code | Self-configured |
+| Suite install | Fully automated (Obsidian + plugins + Skills) | Manual | Manual |
 
 ## License
 
