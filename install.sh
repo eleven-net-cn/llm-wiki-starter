@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
-# llm-wiki-starter — 一行命令创建 LLM Wiki 知识库
+# llm-wiki-starter — Create an LLM Wiki knowledge base in one command
+# Author: eleven-net-cn
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/axtonliu/llm-wiki-starter/main/install.sh | bash
-#   bash install.sh [--name <name>] [--dir <dir>] [--non-interactive] [--skip-suites]
+#   curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash
+#   bash install.sh [--name <name>] [--dir <dir>] [--non-interactive] [--skip-install]
 #
-# 职责：检测/clone 模板 → 安装套件 → 配置插件/Skills → 清理自身
+# Flow: Detect → Install Tools → Create Wiki → Finalize
 
 set -euo pipefail
 
-VERSION="2.0.0"
-TEMPLATE_REPO="axtonliu/llm-wiki-starter"
+VERSION="1.0.0-beta.0"
+TEMPLATE_REPO="eleven-net-cn/llm-wiki-starter"
 TEMPLATE_REPO_URL="https://github.com/$TEMPLATE_REPO"
 
 # ─── State ────────────────────────────────────────────────────────────────────
@@ -19,35 +20,56 @@ OS=""
 PKG_MGR=""
 LOCAL_TEMPLATE=""
 NON_INTERACTIVE=false
-SKIP_SUITES=false
+SKIP_INSTALL=false
 WIKI_NAME=""
 WIKI_DIR=""
+WIKI_LANG=""
 WIKI_TARGET=""
+TEMPLATE_TMPDIR=""
+CLONE_STATUS=""
+
+# Detection flags (set by detect_installed)
+HAS_GIT=false
+HAS_NODE=false
+HAS_BREW=false
+HAS_OBSIDIAN=false
+HAS_CLAUDE_CODE=false
+HAS_OBSIDIAN_SKILLS=false
+HAS_VISUAL_SKILLS=false
+
+# Version strings (set by detect_installed)
+VER_GIT=""
+VER_NODE=""
 
 # ─── Colors (auto-disable for non-TTY) ───────────────────────────────────────
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
+BLUE='\033[0;94m'
+MAGENTA='\033[0;35m'
 CYAN='\033[0;36m'
+WHITE='\033[1;37m'
 BOLD='\033[1m'
 DIM='\033[2m'
+UNDERLINE='\033[4m'
 RESET='\033[0m'
 
-[[ ! -t 1 ]] && RED='' GREEN='' YELLOW='' CYAN='' BOLD='' DIM='' RESET=''
+[[ ! -t 1 ]] && RED='' GREEN='' YELLOW='' BLUE='' MAGENTA='' CYAN='' WHITE='' BOLD='' DIM='' UNDERLINE='' RESET=''
 
-info()    { printf "${CYAN}→${RESET} %s\n" "$1"; }
-success() { printf "${GREEN}✓${RESET} %s\n" "$1"; }
-warn()    { printf "${YELLOW}⚠${RESET} %s\n" "$1"; }
-fail()    { printf "${RED}✗ %s${RESET}\n" "$1" >&2; exit 1; }
-step()    { printf "\n${BOLD}[%s] %s${RESET}\n" "$1" "$2"; }
+info()    { printf "${CYAN}→${RESET} %b\n" "$1"; }
+success() { printf "${GREEN}✓${RESET} %b\n" "$1"; }
+warn()    { printf "${YELLOW}⚠${RESET} %b\n" "$1"; }
+fail()    { printf "${RED}✗ %b${RESET}\n" "$1" >&2; exit 1; }
+stepn()   { printf "\n${BOLD}${BLUE}[%s/%s]${RESET} ${BOLD}%b${RESET}\n" "$1" "$2" "$3"; }
+rel_path() { local p="$1" cwd="$(pwd)"; echo "${p#$cwd/}"; }
 
 # ─── Interactive Prompts (bash 3.2 compatible) ────────────────────────────────
 
 prompt_input() {
   local question="$1" default="$2" result
   if $NON_INTERACTIVE; then echo "$default"; return; fi
-  printf "%s [%s]: " "$question" "$default"
+  printf "  ${BOLD}%s${RESET} [${CYAN}%s${RESET}]: " "$question" "$default" >&2
   read -r result
   echo "${result:-$default}"
 }
@@ -58,9 +80,9 @@ prompt_confirm() {
     [[ "$default" == "Y" ]] && return 0 || return 1
   fi
   if [[ "$default" == "Y" ]]; then
-    printf "%s [Y/n]: " "$question"
+    printf "  ${BOLD}%s${RESET} [${GREEN}Y${RESET}/n]: " "$question"
   else
-    printf "%s [y/N]: " "$question"
+    printf "  ${BOLD}%s${RESET} [y/${RED}N${RESET}]: " "$question"
   fi
   read -r result
   result="${result:-$default}"
@@ -68,20 +90,20 @@ prompt_confirm() {
   [[ "$lower" == "y" || "$lower" == "yes" ]]
 }
 
-prompt_select() {
-  local question="$1" default="$2"
-  shift 2
-  local options=("$@")
-  if $NON_INTERACTIVE; then echo "$default"; return; fi
-  printf "%s\n" "$question"
-  local i=1
-  for opt in "${options[@]}"; do
-    printf "  %d) %s\n" "$i" "$opt"
-    i=$((i + 1))
-  done
-  printf "选择 [1-%d]: " "${#options[@]}"
-  read -r result
-  echo "${result:-$default}"
+prompt_language() {
+  if [[ -n "$WIKI_LANG" ]]; then echo "$WIKI_LANG"; return; fi
+  if $NON_INTERACTIVE; then echo "zh"; return; fi
+
+  printf "\n  ${BOLD}Wiki language / Wiki 语言:${RESET}\n" >&2
+  printf "    ${CYAN}1${RESET}) 中文 ${DIM}(default)${RESET}\n" >&2
+  printf "    ${CYAN}2${RESET}) English\n" >&2
+  printf "  ${BOLD}Choose${RESET} [${CYAN}1${RESET}]: " >&2
+  local choice
+  read -r choice
+  case "$choice" in
+    2|en|english|English) echo "en" ;;
+    *) echo "zh" ;;
+  esac
 }
 
 # ─── OS Detection ─────────────────────────────────────────────────────────────
@@ -90,71 +112,299 @@ detect_os() {
   case "$(uname -s)" in
     Darwin*) OS="macos" ;;
     Linux*)  OS="linux" ;;
-    *)       fail "不支持的系统: $(uname -s)" ;;
+    *)       fail "Unsupported OS: $(uname -s)" ;;
   esac
 
   if [[ "$OS" == "macos" ]]; then
-    command -v brew &>/dev/null && PKG_MGR="brew"
+    command -v brew &>/dev/null && { PKG_MGR="brew"; HAS_BREW=true; }
   elif [[ "$OS" == "linux" ]]; then
     if   command -v apt-get &>/dev/null; then PKG_MGR="apt"
     elif command -v dnf     &>/dev/null; then PKG_MGR="dnf"
     elif command -v pacman  &>/dev/null; then PKG_MGR="pacman"
     fi
   fi
-
-  info "系统: $OS | 包管理: ${PKG_MGR:-未检测到}"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Step 1: Ensure Git
+# Phase 1: Detect
 # ═══════════════════════════════════════════════════════════════════════════════
 
-ensure_git() {
+detect_installed() {
+  # Git
   if command -v git &>/dev/null; then
-    success "Git $(git --version | awk '{print $3}')"
-    return 0
+    HAS_GIT=true
+    VER_GIT=$(git --version 2>/dev/null | awk '{print $3}')
   fi
 
-  warn "Git 未安装"
+  # Homebrew (macOS only)
+  [[ "$OS" == "macos" ]] && command -v brew &>/dev/null && HAS_BREW=true
 
-  if [[ "$OS" == "macos" ]]; then
-    info "通过 Xcode Command Line Tools 安装 Git..."
-    xcode-select --install 2>/dev/null || true
-    if ! $NON_INTERACTIVE; then
-      printf "  安装完成后按 Enter 继续..."
-      read -r
-    fi
-  elif [[ -n "$PKG_MGR" ]]; then
-    info "通过 $PKG_MGR 安装 Git..."
-    case "$PKG_MGR" in
-      apt)    sudo apt-get update -qq && sudo apt-get install -y -qq git ;;
-      dnf)    sudo dnf install -y -q git ;;
-      pacman) sudo pacman -S --noconfirm git ;;
-    esac
+  # Node.js
+  if command -v node &>/dev/null; then
+    HAS_NODE=true
+    VER_NODE=$(node --version 2>/dev/null)
   fi
 
-  command -v git &>/dev/null || fail "Git 安装失败，请手动安装后重试"
-  success "Git 已安装"
+  # Claude Code
+  command -v claude &>/dev/null && HAS_CLAUDE_CODE=true
+
+  # Obsidian
+  if [[ "$OS" == "macos" && -d "/Applications/Obsidian.app" ]]; then
+    HAS_OBSIDIAN=true
+  elif [[ "$OS" == "linux" ]] && command -v obsidian &>/dev/null; then
+    HAS_OBSIDIAN=true
+  fi
+
+  # Claude Code Skills — check ~/.claude/skills/, ~/.agents/skills/, and plugins/marketplaces/
+  local skills_dir="$HOME/.claude/skills"
+  local agents_dir="$HOME/.agents/skills"
+  local plugins_dir="$HOME/.claude/plugins/marketplaces"
+
+  if [[ -d "$skills_dir/obsidian-markdown" || -d "$skills_dir/obsidian-cli" || \
+        -d "$agents_dir/obsidian-markdown" || -d "$agents_dir/obsidian-cli" ]]; then
+    HAS_OBSIDIAN_SKILLS=true
+  fi
+  if [[ -d "$skills_dir/excalidraw-diagram" || -d "$skills_dir/obsidian-canvas-creator" || \
+        -d "$agents_dir/excalidraw-diagram" || -d "$agents_dir/obsidian-canvas-creator" || \
+        -d "$plugins_dir/axton-obsidian-visual-skills/excalidraw-diagram" ]]; then
+    HAS_VISUAL_SKILLS=true
+  fi
+}
+
+print_detection_results() {
+  printf "\n"
+
+  # Obsidian
+  if $HAS_OBSIDIAN; then
+    printf "  ${GREEN}✓${RESET}  %-20s ${DIM}installed${RESET}\n" "Obsidian"
+  else
+    printf "  ${YELLOW}✗${RESET}  %-20s ${CYAN}wiki editor${RESET}\n" "Obsidian"
+  fi
+
+  # Node.js
+  if $HAS_NODE; then
+    printf "  ${GREEN}✓${RESET}  %-20s ${DIM}%s${RESET}\n" "Node.js" "$VER_NODE"
+  else
+    printf "  ${YELLOW}✗${RESET}  %-20s ${CYAN}required for Claude Code${RESET}\n" "Node.js"
+  fi
+
+  # Claude Code
+  if $HAS_CLAUDE_CODE; then
+    printf "  ${GREEN}✓${RESET}  %-20s ${DIM}installed${RESET}\n" "Claude Code"
+  else
+    printf "  ${YELLOW}✗${RESET}  %-20s ${CYAN}recommended AI agent${RESET}\n" "Claude Code"
+  fi
+
+  # Obsidian Skills
+  if $HAS_OBSIDIAN_SKILLS; then
+    printf "  ${GREEN}✓${RESET}  %-20s ${DIM}installed${RESET}\n" "Obsidian Skills"
+  else
+    printf "  ${YELLOW}✗${RESET}  %-20s ${CYAN}kepano/obsidian-skills${RESET}\n" "Obsidian Skills"
+  fi
+
+  # Visual Skills
+  if $HAS_VISUAL_SKILLS; then
+    printf "  ${GREEN}✓${RESET}  %-20s ${DIM}installed${RESET}\n" "Visual Skills"
+  else
+    printf "  ${YELLOW}✗${RESET}  %-20s ${CYAN}excalidraw / canvas / mermaid${RESET}\n" "Visual Skills"
+  fi
+
+  # Git
+  if $HAS_GIT; then
+    printf "  ${GREEN}✓${RESET}  %-20s ${DIM}%s${RESET}\n" "Git" "$VER_GIT"
+  else
+    printf "  ${YELLOW}✗${RESET}  %-20s ${CYAN}optional, for versioning${RESET}\n" "Git"
+  fi
+
+  # Obsidian Plugins (always installed per-wiki)
+  printf "  ${BLUE}→${RESET}  %-20s ${DIM}auto-configured with wiki${RESET}\n" "Obsidian Plugins"
+
+  printf "\n"
+}
+
+is_all_installed() {
+  $HAS_OBSIDIAN && $HAS_NODE && $HAS_CLAUDE_CODE && \
+  $HAS_OBSIDIAN_SKILLS && $HAS_VISUAL_SKILLS && $HAS_GIT
+}
+
+print_manual_guide() {
+  printf "\n  ${BOLD}Manual install guide:${RESET}\n\n"
+
+  $HAS_OBSIDIAN || \
+    printf "  %-20s ${DIM}${UNDERLINE}https://obsidian.md${RESET}\n" "Obsidian"
+
+  $HAS_NODE || \
+    printf "  %-20s ${DIM}${UNDERLINE}https://nodejs.org${RESET}\n" "Node.js"
+
+  if ! $HAS_CLAUDE_CODE; then
+    printf "  %-20s ${DIM}${UNDERLINE}https://claude.ai/claude-code${RESET}\n" "Claude Code"
+    printf "  %-20s ${WHITE}npm install -g @anthropic-ai/claude-code${RESET}\n" ""
+  fi
+
+  $HAS_OBSIDIAN_SKILLS || \
+    printf "  %-20s ${DIM}${UNDERLINE}https://github.com/kepano/obsidian-skills${RESET}\n" "Obsidian Skills"
+
+  $HAS_VISUAL_SKILLS || \
+    printf "  %-20s ${DIM}${UNDERLINE}https://github.com/axtonliu/axton-obsidian-visual-skills${RESET}\n" "Visual Skills"
+
+  $HAS_GIT || \
+    printf "  %-20s ${DIM}${UNDERLINE}https://git-scm.com${RESET}\n" "Git"
+
+  printf "\n"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Step 2: Detect Clone Status & Prepare Wiki
+# Phase 2: Install Tools
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Returns via CLONE_STATUS:
-#   "in_template"   — inside template repo (has install.sh + template/)
-#   "in_wiki"       — inside an existing wiki (has CLAUDE.md + raw/ + wiki/)
-#   "need_clone"    — need to clone/copy template
+ensure_brew() {
+  [[ "$OS" != "macos" ]] && return 0
+  $HAS_BREW && return 0
+
+  info "Installing ${WHITE}Homebrew${RESET}..."
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || /usr/local/bin/brew shellenv 2>/dev/null)" || true
+  PKG_MGR="brew"
+  HAS_BREW=true
+  success "Homebrew installed"
+}
+
+install_obsidian() {
+  $HAS_OBSIDIAN && return 0
+
+  info "Installing ${WHITE}Obsidian${RESET}..."
+  case "$OS" in
+    macos)
+      if $HAS_BREW || command -v brew &>/dev/null; then
+        brew install --cask obsidian
+        HAS_OBSIDIAN=true
+        success "Obsidian installed"
+      else
+        warn "Cannot auto-install without Homebrew. Download: ${UNDERLINE}https://obsidian.md${RESET}"
+      fi
+      ;;
+    linux)
+      if command -v snap &>/dev/null; then
+        sudo snap install obsidian --classic
+        HAS_OBSIDIAN=true
+        success "Obsidian installed"
+      else
+        warn "Cannot auto-install. Download: ${UNDERLINE}https://obsidian.md${RESET}"
+      fi
+      ;;
+  esac
+}
+
+install_node() {
+  $HAS_NODE && return 0
+
+  info "Installing ${WHITE}Node.js${RESET}..."
+  case "$PKG_MGR" in
+    brew)   brew install node ;;
+    apt)    sudo apt-get update -qq && sudo apt-get install -y -qq nodejs npm ;;
+    dnf)    sudo dnf install -y -q nodejs npm ;;
+    pacman) sudo pacman -S --noconfirm nodejs npm ;;
+    *)      warn "Cannot auto-install. Download: ${UNDERLINE}https://nodejs.org${RESET}"; return 1 ;;
+  esac
+  HAS_NODE=true
+  success "Node.js installed"
+}
+
+install_claude_code() {
+  $HAS_CLAUDE_CODE && return 0
+
+  if ! command -v npm &>/dev/null; then
+    warn "npm not available, skipping Claude Code"
+    return 1
+  fi
+
+  info "Installing ${WHITE}Claude Code${RESET}..."
+  npm install -g @anthropic-ai/claude-code 2>&1 | tail -3
+  if command -v claude &>/dev/null; then
+    HAS_CLAUDE_CODE=true
+    success "Claude Code installed"
+  else
+    warn "Install finished — you may need to restart your terminal"
+  fi
+}
+
+install_git() {
+  $HAS_GIT && return 0
+
+  info "Installing ${WHITE}Git${RESET}..."
+  case "$OS" in
+    macos)
+      xcode-select --install 2>/dev/null || true
+      if ! $NON_INTERACTIVE; then
+        printf "  Press Enter after Xcode CLI Tools installation completes..."
+        read -r
+      fi
+      ;;
+    linux)
+      case "$PKG_MGR" in
+        apt)    sudo apt-get update -qq && sudo apt-get install -y -qq git ;;
+        dnf)    sudo dnf install -y -q git ;;
+        pacman) sudo pacman -S --noconfirm git ;;
+        *)      warn "Cannot auto-install. Download: ${UNDERLINE}https://git-scm.com${RESET}"; return 1 ;;
+      esac
+      ;;
+  esac
+
+  if command -v git &>/dev/null; then
+    HAS_GIT=true
+    success "Git installed"
+  else
+    warn "Git installation may require restarting your terminal"
+  fi
+}
+
+install_skills() {
+  if ! command -v npx &>/dev/null; then
+    warn "npx not available, skipping Skills installation"
+    return 1
+  fi
+
+  if ! $HAS_OBSIDIAN_SKILLS; then
+    info "Installing ${WHITE}kepano/obsidian-skills${RESET}..."
+    if npx -y skills add kepano/obsidian-skills -g -y 2>&1 | tail -3; then
+      success "kepano/obsidian-skills installed"
+    else
+      warn "kepano/obsidian-skills install failed"
+    fi
+  fi
+
+  if ! $HAS_VISUAL_SKILLS; then
+    info "Installing ${WHITE}axtonliu/axton-obsidian-visual-skills${RESET}..."
+    if npx -y skills add axtonliu/axton-obsidian-visual-skills -g -y 2>&1 | tail -3; then
+      success "axtonliu/visual-skills installed"
+    else
+      warn "axtonliu/visual-skills install failed"
+    fi
+  fi
+}
+
+run_install() {
+  [[ "$OS" == "macos" ]] && ! $HAS_BREW && ensure_brew
+
+  install_obsidian
+  install_node || true
+  install_claude_code
+  install_skills
+  install_git
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Phase 3: Create Wiki
+# ═══════════════════════════════════════════════════════════════════════════════
+
 detect_clone_status() {
   CLONE_STATUS="need_clone"
 
-  # Inside the template repo itself (has template/ dir and install.sh)
-  if [[ -f "install.sh" && -d "template" && -f "template/CLAUDE.md" ]]; then
+  if [[ -f "install.sh" && -d "template/base" ]]; then
     CLONE_STATUS="in_template"
     return
   fi
 
-  # Inside an already-initialized wiki
   if [[ -f "CLAUDE.md" && -d "raw" && -d "wiki" ]]; then
     CLONE_STATUS="in_wiki"
     return
@@ -164,153 +414,113 @@ detect_clone_status() {
 detect_dev_mode() {
   local script_dir
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)" || return 1
-  if [[ -d "$script_dir/template" && -f "$script_dir/template/CLAUDE.md" ]]; then
+  if [[ -d "$script_dir/template/base" ]]; then
     LOCAL_TEMPLATE="$script_dir/template"
     return 0
   fi
   return 1
 }
 
+download_template() {
+  local tmpdir
+  tmpdir=$(mktemp -d)
+  TEMPLATE_TMPDIR="$tmpdir"
+
+  local downloaded=false
+
+  # Try git clone
+  if command -v git &>/dev/null; then
+    info "Downloading template via ${WHITE}git${RESET}..."
+    if git clone --depth 1 "$TEMPLATE_REPO_URL" "$tmpdir/repo" 2>&1 | tail -1; then
+      if [[ -d "$tmpdir/repo/template/base" ]]; then
+        LOCAL_TEMPLATE="$tmpdir/repo/template"
+        downloaded=true
+      fi
+    fi
+  fi
+
+  # Fallback to curl tarball
+  if ! $downloaded; then
+    info "Downloading template via ${WHITE}curl${RESET}..."
+    local tarball_url="https://github.com/$TEMPLATE_REPO/archive/refs/heads/main.tar.gz"
+    if curl -fsSL "$tarball_url" -o "$tmpdir/repo.tar.gz" 2>/dev/null; then
+      tar -xzf "$tmpdir/repo.tar.gz" -C "$tmpdir" 2>/dev/null
+      local extracted
+      extracted=$(find "$tmpdir" -maxdepth 1 -type d -name 'llm-wiki-starter*' | head -1)
+      if [[ -n "$extracted" && -d "$extracted/template/base" ]]; then
+        LOCAL_TEMPLATE="$extracted/template"
+        downloaded=true
+      fi
+    fi
+  fi
+
+  if ! $downloaded; then
+    rm -rf "$tmpdir"
+    TEMPLATE_TMPDIR=""
+    fail "Failed to download template. Check your network connection."
+  fi
+}
+
 prepare_wiki() {
   local target="$1"
 
   if [[ -d "$target" && -f "$target/CLAUDE.md" ]]; then
-    warn "目录 $target 已存在且包含 Wiki，跳过创建"
+    warn "Directory ${CYAN}$target${RESET} already contains a wiki, skipping creation"
     return 0
   fi
-  [[ -d "$target" ]] && fail "目录 $target 已存在，请指定其他名称或删除后重试"
+  [[ -d "$target" ]] && fail "Directory ${CYAN}$target${RESET} already exists. Choose a different name or remove it."
 
-  if [[ -n "$LOCAL_TEMPLATE" ]]; then
-    info "复制本地模板（开发模式）..."
-    cp -r "$LOCAL_TEMPLATE" "$target"
+  if [[ -z "$LOCAL_TEMPLATE" ]]; then
+    download_template
+  fi
+
+  info "Creating wiki from template..."
+  mkdir -p "$target"
+
+  # Layer 1: shared base files (.gitignore, canvas/, root sortspec)
+  cp -a "$LOCAL_TEMPLATE/base/." "$target/" 2>/dev/null || true
+
+  # Layer 2: language overlay (AGENTS.md, CLAUDE.md, README.md, raw/, wiki/)
+  cp -a "$LOCAL_TEMPLATE/$WIKI_LANG/." "$target/" 2>/dev/null || true
+
+  # Ensure empty directories exist (git doesn't track them)
+  local base_dirs=("wiki/assets/excalidraw" "canvas")
+  local lang_dirs=()
+  if [[ "$WIKI_LANG" == "zh" ]]; then
+    lang_dirs=("raw/收件箱" "raw/assets" "wiki/概念" "wiki/资料摘要" "wiki/综合分析" "wiki/归档")
   else
-    info "从 GitHub 下载模板..."
-    local tmpdir
-    tmpdir=$(mktemp -d)
-    if git clone --depth 1 "$TEMPLATE_REPO_URL" "$tmpdir/repo" 2>&1 | tail -1; then
-      if [[ -d "$tmpdir/repo/template" ]]; then
-        cp -r "$tmpdir/repo/template" "$target"
-      else
-        rm -rf "$tmpdir"
-        fail "模板结构异常，请检查仓库"
-      fi
+    lang_dirs=("raw/inbox" "raw/assets" "wiki/concepts" "wiki/summaries" "wiki/synthesis" "wiki/archived")
+  fi
+  for d in "${base_dirs[@]}" "${lang_dirs[@]}"; do
+    mkdir -p "$target/$d"
+  done
+
+  success "Wiki created: ${CYAN}$(rel_path "$target")${RESET}"
+}
+
+replace_placeholders() {
+  local wiki_dir="$1" name="$2"
+  local today
+  today=$(date +%Y-%m-%d)
+
+  local files_to_patch=("CLAUDE.md" "AGENTS.md" "README.md")
+
+  if [[ "$WIKI_LANG" == "zh" ]]; then
+    files_to_patch+=("wiki/知识库概览.md" "wiki/Wiki 目录.md" "wiki/操作日志.md")
+  else
+    files_to_patch+=("wiki/Overview.md" "wiki/Index.md" "wiki/Changelog.md")
+  fi
+
+  for f in "${files_to_patch[@]}"; do
+    local fpath="$wiki_dir/$f"
+    [[ -f "$fpath" ]] || continue
+    if [[ "$OS" == "macos" ]]; then
+      sed -i '' "s/<Wiki Name>/$name/g; s/<wiki-name>/$name/g; s/{{date}}/$today/g" "$fpath"
     else
-      rm -rf "$tmpdir"
-      fail "下载失败，请检查网络连接"
+      sed -i "s/<Wiki Name>/$name/g; s/<wiki-name>/$name/g; s/{{date}}/$today/g" "$fpath"
     fi
-    rm -rf "$tmpdir"
-  fi
-
-  success "Wiki 结构已创建: $target"
+  done
 }
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Step 3: Install Required Suites
-# ═══════════════════════════════════════════════════════════════════════════════
-
-ensure_brew() {
-  [[ "$OS" != "macos" ]] && return 0
-  command -v brew &>/dev/null && return 0
-
-  warn "Homebrew 未安装"
-  if prompt_confirm "安装 Homebrew（macOS 包管理器）？" "Y"; then
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || /usr/local/bin/brew shellenv 2>/dev/null)" || true
-    PKG_MGR="brew"
-    success "Homebrew 已安装"
-  else
-    warn "跳过 Homebrew — 部分套件需手动安装"
-  fi
-}
-
-ensure_node() {
-  if command -v node &>/dev/null; then
-    success "Node.js $(node --version)"
-    return 0
-  fi
-
-  warn "Node.js 未安装（Claude Code 需要）"
-  if prompt_confirm "安装 Node.js？" "Y"; then
-    case "$PKG_MGR" in
-      brew)   brew install node ;;
-      apt)    sudo apt-get update -qq && sudo apt-get install -y -qq nodejs npm ;;
-      dnf)    sudo dnf install -y -q nodejs npm ;;
-      pacman) sudo pacman -S --noconfirm nodejs npm ;;
-      *)      warn "无法自动安装 Node.js，请手动安装"; return 1 ;;
-    esac
-    success "Node.js 已安装"
-  else
-    warn "跳过 Node.js"
-    return 1
-  fi
-}
-
-install_claude_code() {
-  if command -v claude &>/dev/null; then
-    success "Claude Code ✓"
-    return 0
-  fi
-
-  if ! command -v npm &>/dev/null; then
-    warn "npm 不可用，跳过 Claude Code"
-    printf "  手动安装: ${DIM}npm install -g @anthropic-ai/claude-code${RESET}\n"
-    return 1
-  fi
-
-  if prompt_confirm "安装 Claude Code（LLM Wiki 的 AI Agent）？" "Y"; then
-    info "安装 Claude Code..."
-    npm install -g @anthropic-ai/claude-code 2>&1 | tail -3
-    if command -v claude &>/dev/null; then
-      success "Claude Code 已安装"
-    else
-      warn "安装完成，可能需要重开终端生效"
-    fi
-  else
-    warn "跳过 Claude Code"
-    printf "  手动安装: ${DIM}npm install -g @anthropic-ai/claude-code${RESET}\n"
-  fi
-}
-
-install_obsidian() {
-  # macOS check
-  if [[ "$OS" == "macos" && -d "/Applications/Obsidian.app" ]]; then
-    success "Obsidian ✓"
-    return 0
-  fi
-  # Linux check
-  if [[ "$OS" == "linux" ]] && command -v obsidian &>/dev/null; then
-    success "Obsidian ✓"
-    return 0
-  fi
-
-  warn "Obsidian 未安装"
-  if prompt_confirm "安装 Obsidian（推荐的 Wiki 编辑器）？" "Y"; then
-    case "$OS" in
-      macos)
-        if [[ "$PKG_MGR" == "brew" ]]; then
-          brew install --cask obsidian
-          success "Obsidian 已安装"
-        else
-          warn "请从 https://obsidian.md 手动下载安装"
-        fi
-        ;;
-      linux)
-        if command -v snap &>/dev/null; then
-          sudo snap install obsidian --classic
-          success "Obsidian 已安装"
-        else
-          warn "请从 https://obsidian.md 手动下载安装"
-        fi
-        ;;
-    esac
-  else
-    warn "跳过 Obsidian"
-  fi
-}
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Step 4: Obsidian Plugins
-# ═══════════════════════════════════════════════════════════════════════════════
 
 download_plugin() {
   local repo="$1" plugin_id="$2" target_dir="$3"
@@ -325,15 +535,14 @@ download_plugin() {
       ok=false; break
     fi
   done
-  # styles.css is optional
   curl -fsSL "$base_url/styles.css" -o "$plugin_dir/styles.css" 2>/dev/null || true
 
   if $ok && [[ -s "$plugin_dir/manifest.json" ]]; then
-    printf "  ${GREEN}✓${RESET} %s\n" "$plugin_id"
+    printf "    ${GREEN}✓${RESET} %s\n" "$plugin_id"
     return 0
   else
     rm -rf "$plugin_dir"
-    printf "  ${YELLOW}⚠${RESET} %s 下载失败\n" "$plugin_id"
+    printf "    ${YELLOW}⚠${RESET} %s ${DIM}download failed${RESET}\n" "$plugin_id"
     return 1
   fi
 }
@@ -344,45 +553,40 @@ install_obsidian_plugins() {
 
   mkdir -p "$wiki_dir/.obsidian/plugins"
 
-  # ── 必装插件 ──
-  local required_plugins=(
+  local all_plugins=(
     "blacksmithgu/obsidian-dataview|dataview"
     "SilentVoid13/Templater|templater-obsidian"
     "Vinzent03/obsidian-git|obsidian-git"
     "platers/obsidian-linter|obsidian-linter"
+    "pjeby/tag-wrangler|tag-wrangler"
+    "TfTHacker/obsidian42-strange-new-worlds|obsidian42-strange-new-worlds"
+    "mirnovov/obsidian-homepage|homepage"
+    "SebastianMC/obsidian-custom-sort|custom-sort"
   )
 
-  info "安装必装插件..."
-  for entry in "${required_plugins[@]}"; do
+  # Skip obsidian-git if Git is not available
+  if ! $HAS_GIT; then
+    info "Git not available — skipping ${WHITE}obsidian-git${RESET} plugin"
+    local filtered=()
+    for entry in "${all_plugins[@]}"; do
+      [[ "$entry" == *"|obsidian-git" ]] && continue
+      filtered+=("$entry")
+    done
+    all_plugins=("${filtered[@]}")
+  fi
+
+  info "Installing Obsidian plugins..."
+  for entry in "${all_plugins[@]}"; do
     local repo="${entry%%|*}" id="${entry##*|}"
     if [[ -d "$wiki_dir/.obsidian/plugins/$id" ]]; then
-      printf "  ${GREEN}✓${RESET} %s 已存在\n" "$id"
+      printf "    ${GREEN}✓${RESET} %s ${DIM}(exists)${RESET}\n" "$id"
       plugins_installed+=("$id")
       continue
     fi
     download_plugin "$repo" "$id" "$wiki_dir" && plugins_installed+=("$id")
   done
 
-  # ── 推荐插件 ──
-  if prompt_confirm "安装推荐插件（Tag Wrangler / Strange New Worlds / Homepage）？" "Y"; then
-    info "安装推荐插件..."
-    local recommended_plugins=(
-      "pjeby/tag-wrangler|tag-wrangler"
-      "TfTHacker/obsidian42-strange-new-worlds|obsidian42-strange-new-worlds"
-      "mirnovov/obsidian-homepage|homepage"
-    )
-    for entry in "${recommended_plugins[@]}"; do
-      local repo="${entry%%|*}" id="${entry##*|}"
-      if [[ -d "$wiki_dir/.obsidian/plugins/$id" ]]; then
-        printf "  ${GREEN}✓${RESET} %s 已存在\n" "$id"
-        plugins_installed+=("$id")
-        continue
-      fi
-      download_plugin "$repo" "$id" "$wiki_dir" && plugins_installed+=("$id")
-    done
-  fi
-
-  # ── Write community-plugins.json ──
+  # Write community-plugins.json
   if [[ ${#plugins_installed[@]} -gt 0 ]]; then
     local json="["
     local first=true
@@ -392,140 +596,124 @@ install_obsidian_plugins() {
     done
     json+="]"
     echo "$json" > "$wiki_dir/.obsidian/community-plugins.json"
-    success "${#plugins_installed[@]} 个插件已配置"
+    success "${#plugins_installed[@]} plugins configured"
+  fi
+
+  # Configure custom-sort plugin (must not be suspended)
+  local cs_dir="$wiki_dir/.obsidian/plugins/custom-sort"
+  if [[ -d "$cs_dir" && ! -f "$cs_dir/data.json" ]]; then
+    cat > "$cs_dir/data.json" <<'CSJSON'
+{"suspended":false,"statusBarEntryEnabled":true,"notificationsEnabled":true,"customSortContextSubmenu":true}
+CSJSON
   fi
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# Step 5: Claude Code Skills
-# ═══════════════════════════════════════════════════════════════════════════════
+setup_wiki() {
+  detect_clone_status
 
-install_skill_repo() {
-  local repo_url="$1" repo_name="$2" skills_dir="$3"
-  local tmpdir
-  tmpdir=$(mktemp -d)
-  info "安装 $repo_name..."
-  if git clone --depth 1 "$repo_url" "$tmpdir/repo" 2>&1 | tail -1; then
-    if [[ -d "$tmpdir/repo/skills" ]]; then
-      cp -r "$tmpdir/repo/skills"/* "$skills_dir/"
-    elif [[ -d "$tmpdir/repo" ]]; then
-      # Some repos put skills at root level
-      local copied=false
-      for d in "$tmpdir/repo"/*/; do
-        if [[ -f "$d/SKILL.md" || -f "$d/skill.md" ]]; then
-          cp -r "$d" "$skills_dir/"
-          copied=true
-        fi
-      done
-      if ! $copied; then
-        warn "$repo_name 结构不匹配，跳过"
-        rm -rf "$tmpdir"
-        return 1
-      fi
-    fi
-    rm -rf "$tmpdir"
-    success "$repo_name 已安装 → $skills_dir/"
-  else
-    rm -rf "$tmpdir"
-    warn "$repo_name 安装失败"
-    return 1
-  fi
-}
-
-install_skills() {
-  local skills_dir="$HOME/.claude/skills"
-  mkdir -p "$skills_dir"
-
-  # ── kepano/obsidian-skills ──
-  local has_obsidian_skills=false
-  if [[ -d "$skills_dir/obsidian-markdown" || -d "$skills_dir/obsidian-cli" ]]; then
-    has_obsidian_skills=true
-    success "kepano/obsidian-skills 已安装"
-  fi
-
-  # ── axtonliu/axton-obsidian-visual-skills ──
-  local has_visual_skills=false
-  if [[ -d "$skills_dir/excalidraw-diagram" || -d "$skills_dir/obsidian-canvas-creator" ]]; then
-    has_visual_skills=true
-    success "axtonliu/visual-skills 已安装"
-  fi
-
-  if $has_obsidian_skills && $has_visual_skills; then
-    return 0
-  fi
-
-  if $NON_INTERACTIVE; then
-    # Non-interactive: install all missing
-    if ! $has_obsidian_skills; then
-      install_skill_repo "https://github.com/kepano/obsidian-skills" "kepano/obsidian-skills" "$skills_dir"
-    fi
-    if ! $has_visual_skills; then
-      install_skill_repo "https://github.com/axtonliu/axton-obsidian-visual-skills" "axtonliu/visual-skills" "$skills_dir"
-    fi
-    return 0
-  fi
-
-  local choice
-  choice=$(prompt_select "安装 Claude Code Skills？（让 Agent 学会 Obsidian 操作和可视化）" "1" \
-    "全部安装（推荐）" \
-    "仅 kepano/obsidian-skills（Obsidian 核心能力）" \
-    "仅 axtonliu/visual-skills（Excalidraw / Mermaid / Canvas）" \
-    "跳过")
-
-  case "$choice" in
-    1)
-      $has_obsidian_skills || install_skill_repo "https://github.com/kepano/obsidian-skills" "kepano/obsidian-skills" "$skills_dir"
-      $has_visual_skills   || install_skill_repo "https://github.com/axtonliu/axton-obsidian-visual-skills" "axtonliu/visual-skills" "$skills_dir"
+  case "$CLONE_STATUS" in
+    in_template)
+      LOCAL_TEMPLATE="$(pwd)/template"
+      info "Set up your new wiki:"
+      WIKI_LANG=$(prompt_language)
+      WIKI_NAME="${WIKI_NAME:-my-wiki}"
+      WIKI_NAME=$(prompt_input "Wiki name" "$WIKI_NAME")
+      WIKI_TARGET="${WIKI_DIR:-${LLM_WIKI_DIR:-$(pwd)/$WIKI_NAME}}"
+      info "Location: ${CYAN}$(rel_path "$WIKI_TARGET")${RESET}"
+      prepare_wiki "$WIKI_TARGET"
       ;;
-    2)
-      $has_obsidian_skills || install_skill_repo "https://github.com/kepano/obsidian-skills" "kepano/obsidian-skills" "$skills_dir"
+    in_wiki)
+      info "Current directory is already an LLM Wiki"
+      WIKI_TARGET="$(pwd)"
+      WIKI_NAME="${WIKI_NAME:-$(basename "$(pwd)")}"
       ;;
-    3)
-      $has_visual_skills   || install_skill_repo "https://github.com/axtonliu/axton-obsidian-visual-skills" "axtonliu/visual-skills" "$skills_dir"
+    need_clone)
+      detect_dev_mode || true
+      info "Set up your new wiki:"
+      WIKI_LANG=$(prompt_language)
+      WIKI_NAME="${WIKI_NAME:-my-wiki}"
+      WIKI_NAME=$(prompt_input "Wiki name" "$WIKI_NAME")
+      WIKI_TARGET="${WIKI_DIR:-${LLM_WIKI_DIR:-$WIKI_NAME}}"
+      info "Location: ${CYAN}$(rel_path "$WIKI_TARGET")${RESET}"
+      prepare_wiki "$WIKI_TARGET"
       ;;
-    4) info "跳过 Skills 安装" ;;
   esac
+
+  install_obsidian_plugins "$WIKI_TARGET"
+  replace_placeholders "$WIKI_TARGET" "$WIKI_NAME"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Step 6: Git Init & Cleanup
+# Phase 4: Finalize
 # ═══════════════════════════════════════════════════════════════════════════════
 
-init_wiki_git() {
+init_git_repo() {
   local wiki_dir="$1" name="$2"
 
-  cd "$wiki_dir"
-
-  # Replace README placeholder
-  if [[ -f "README.md" ]] && grep -q "<Wiki 名称>" "README.md" 2>/dev/null; then
-    if [[ "$OS" == "macos" ]]; then
-      sed -i '' "s/<Wiki 名称>/$name/g" README.md
-    else
-      sed -i "s/<Wiki 名称>/$name/g" README.md
-    fi
-  fi
-
-  if [[ -d ".git" ]]; then
-    success "Git 仓库已存在"
+  if ! command -v git &>/dev/null; then
+    info "Git not available — skipping repository initialization"
     return 0
   fi
 
-  git init --quiet
-  git add -A
-  git commit --quiet -m "init: $name (via llm-wiki-starter v$VERSION)"
-  success "Git 仓库已初始化"
+  if [[ -d "$wiki_dir/.git" ]]; then
+    success "Git repository already exists"
+    return 0
+  fi
+
+  git -C "$wiki_dir" init --quiet
+  git -C "$wiki_dir" add -A
+  git -C "$wiki_dir" commit --quiet -m "init: $name (via llm-wiki-starter v$VERSION)"
+  success "Git repository initialized"
 }
 
 cleanup_installer() {
   local wiki_dir="$1"
-  # Remove install.sh from wiki dir (if copied from template repo)
+
+  # Clean up downloaded template
+  [[ -n "$TEMPLATE_TMPDIR" ]] && rm -rf "$TEMPLATE_TMPDIR" 2>/dev/null || true
+
+  # Never delete from the source repo
+  [[ -d "$wiki_dir/template" ]] && return 0
+
   rm -f "$wiki_dir/install.sh" 2>/dev/null || true
 
-  # If running from /tmp (curl | bash mode), clean up
   local script_path="${BASH_SOURCE[0]:-$0}"
   if [[ "$script_path" == "/tmp/"* ]]; then
     rm -f "$script_path" 2>/dev/null || true
   fi
+}
+
+print_success() {
+  local name="$1" target="$2"
+  local abs_target
+  abs_target="$(cd "$target" 2>/dev/null && pwd)" || abs_target="$target"
+
+  printf "\n${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}\n"
+  printf "${BOLD}${GREEN}  ✓ %s is ready!${RESET}\n" "$name"
+  printf "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}\n"
+
+  printf "\n${BOLD}Operations ${DIM}(inside Claude Code)${RESET}${BOLD}:${RESET}\n\n"
+  printf "  ${MAGENTA}${BOLD}1. Ingest${RESET}  ${DIM}→${RESET}  ${WHITE}Ingest this article: https://example.com/article${RESET}\n"
+  printf "             ${DIM}Add knowledge from URLs or files in${RESET} ${CYAN}raw/${RESET}\n"
+  printf "  ${MAGENTA}${BOLD}2. Query${RESET}   ${DIM}→${RESET}  ${WHITE}What is the relationship between X and Y?${RESET}\n"
+  printf "             ${DIM}Ask questions, get answers with citations${RESET}\n"
+  printf "  ${MAGENTA}${BOLD}3. Lint${RESET}    ${DIM}→${RESET}  ${WHITE}Run a health check on the wiki${RESET}\n"
+  printf "             ${DIM}Find orphans, dead links, stale pages${RESET}\n"
+
+  printf "\n${BOLD}Quick start:${RESET}\n\n"
+  local step_n=1
+  if [[ "$abs_target" != "$(pwd)" ]]; then
+    printf "  ${DIM}%d.${RESET} ${WHITE}cd %s${RESET}\n" "$step_n" "$(rel_path "$target")"
+    step_n=$((step_n + 1))
+  fi
+  if [[ "$OS" == "macos" ]]; then
+    printf "  ${DIM}%d.${RESET} ${WHITE}open -a Obsidian .${RESET}       ${DIM}# open as Obsidian vault${RESET}\n" "$step_n"
+  else
+    printf "  ${DIM}%d.${RESET} ${WHITE}obsidian .${RESET}               ${DIM}# open as Obsidian vault${RESET}\n" "$step_n"
+  fi
+  step_n=$((step_n + 1))
+  printf "  ${DIM}%d.${RESET} ${WHITE}claude${RESET}                   ${DIM}# start AI agent${RESET}\n" "$step_n"
+  printf "\n"
 }
 
 # ─── CLI Args ─────────────────────────────────────────────────────────────────
@@ -535,43 +723,51 @@ parse_args() {
     case "$1" in
       --name)            WIKI_NAME="$2"; shift 2 ;;
       --dir)             WIKI_DIR="$2"; shift 2 ;;
+      --lang)
+        case "$2" in
+          zh|en) WIKI_LANG="$2" ;;
+          *) fail "Invalid language: $2 (use 'zh' or 'en')" ;;
+        esac
+        shift 2
+        ;;
       --non-interactive) NON_INTERACTIVE=true; shift ;;
-      --skip-suites)     SKIP_SUITES=true; shift ;;
+      --skip-install)    SKIP_INSTALL=true; shift ;;
       --help|-h)         usage; exit 0 ;;
       --version|-v)      echo "llm-wiki-starter v$VERSION"; exit 0 ;;
-      *)                 warn "未知参数: $1"; shift ;;
+      *)                 warn "Unknown option: $1"; shift ;;
     esac
   done
 }
 
 usage() {
   cat <<'EOF'
-llm-wiki-starter — 一行命令创建 LLM Wiki 知识库
+llm-wiki-starter — Create an LLM Wiki knowledge base in one command
 
 Usage:
-  curl -fsSL https://raw.githubusercontent.com/axtonliu/llm-wiki-starter/main/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash
   bash install.sh [OPTIONS]
 
 Options:
-  --name <名称>        Wiki 名称（默认: my-wiki）
-  --dir <目录>         目标目录（默认: ./<名称>）
-  --non-interactive    跳过所有交互，使用默认值
-  --skip-suites        跳过套件安装（仅创建 Wiki 结构）
-  --help               显示帮助
-  --version            显示版本
+  --name <name>        Wiki name (default: my-wiki)
+  --dir <directory>    Target directory (default: ./<name>)
+  --lang <zh|en>       Wiki language (default: zh)
+  --non-interactive    Skip all prompts, use defaults
+  --skip-install       Only create wiki structure, skip tool installation
+  --help               Show this help
+  --version            Show version
 
-环境变量:
-  LLM_WIKI_DIR         目标目录（等价于 --dir）
+Environment:
+  LLM_WIKI_DIR         Target directory (same as --dir)
 
-示例:
-  # 交互式安装
+Examples:
+  # Interactive install
   bash install.sh
 
-  # 静默安装
+  # Non-interactive install
   bash install.sh --non-interactive --name my-ai-wiki
 
-  # 开发测试（跳过套件）
-  bash install.sh --name test-wiki --dir /tmp/test-wiki --skip-suites
+  # Structure only (no tools)
+  bash install.sh --name test-wiki --dir /tmp/test-wiki --skip-install
 EOF
 }
 
@@ -581,87 +777,55 @@ EOF
 
 main() {
   printf "\n${BOLD}┌──────────────────────────────────────────────────┐${RESET}\n"
-  printf "${BOLD}│  LLM Wiki Starter v%-29s│${RESET}\n" "$VERSION"
-  printf "${BOLD}│  基于 Karpathy LLM Wiki 模式的知识库脚手架       │${RESET}\n"
+  printf "${BOLD}│  ${BLUE}LLM Wiki Starter${RESET}${BOLD} v%-30s│${RESET}\n" "$VERSION"
+  printf "${BOLD}│  ${DIM}Knowledge base scaffolding for LLM Wiki${RESET}${BOLD}         │${RESET}\n"
   printf "${BOLD}└──────────────────────────────────────────────────┘${RESET}\n\n"
 
   detect_os
+  info "OS: ${WHITE}$OS${RESET}  |  Package manager: ${WHITE}${PKG_MGR:-none}${RESET}"
 
-  # ── 1. Git ──
-  step "1/6" "检测 Git"
-  ensure_git
+  # ── Detect first, then determine step count ──
+  detect_installed
 
-  # ── 2. Wiki 结构 ──
-  step "2/6" "准备 Wiki 结构"
-  detect_clone_status
+  local total_steps=3
+  local need_install=false
+  local current_step=1
 
-  case "$CLONE_STATUS" in
-    in_template)
-      info "已在模板仓库内，就地初始化"
-      WIKI_NAME="${WIKI_NAME:-$(basename "$(pwd)")}"
-      WIKI_NAME=$(prompt_input "知识库名称" "$WIKI_NAME")
-      WIKI_TARGET="$(pwd)"
-      ;;
-    in_wiki)
-      info "当前目录已是 LLM Wiki，跳过模板创建"
-      WIKI_TARGET="$(pwd)"
-      WIKI_NAME="${WIKI_NAME:-$(basename "$(pwd)")}"
-      ;;
-    need_clone)
-      detect_dev_mode || true
-      WIKI_NAME="${WIKI_NAME:-my-wiki}"
-      WIKI_NAME=$(prompt_input "知识库名称" "$WIKI_NAME")
-      WIKI_TARGET="${WIKI_DIR:-${LLM_WIKI_DIR:-$WIKI_NAME}}"
-      prepare_wiki "$WIKI_TARGET"
-      ;;
-  esac
+  if ! $SKIP_INSTALL && ! is_all_installed; then
+    need_install=true
+    total_steps=4
+  fi
 
-  if $SKIP_SUITES; then
-    step "3-5" "跳过套件安装 (--skip-suites)"
-  else
-    # ── 3. 必备套件 ──
-    step "3/6" "安装必备套件"
-    [[ "$OS" == "macos" ]] && ensure_brew
-    ensure_node || true
-    install_claude_code
-    install_obsidian
+  # ── Phase 1: Show detection results ──
+  stepn "$current_step" "$total_steps" "Detecting installed tools"
+  print_detection_results
+  current_step=$((current_step + 1))
 
-    # ── 4. Obsidian 插件 ──
-    step "4/6" "Obsidian 插件"
-    if prompt_confirm "自动安装 Obsidian 插件？" "Y"; then
-      install_obsidian_plugins "$WIKI_TARGET"
+  # ── Phase 2: Install (only if needed) ──
+  if $SKIP_INSTALL; then
+    info "Skipping tool installation ${DIM}(--skip-install)${RESET}"
+  elif $need_install; then
+    if prompt_confirm "Install missing items?" "Y"; then
+      stepn "$current_step" "$total_steps" "Installing tools"
+      run_install
+      current_step=$((current_step + 1))
     else
-      warn "跳过插件安装"
-      printf "  必装: Dataview, Templater, Obsidian Git, Linter\n"
-      printf "  推荐: Tag Wrangler, Strange New Worlds, Homepage\n"
+      info "Skipped automatic installation"
+      print_manual_guide
+      current_step=$((current_step + 1))
     fi
-
-    # ── 5. Skills ──
-    step "5/6" "Claude Code Skills"
-    install_skills
   fi
 
-  # ── 6. Git Init & Cleanup ──
-  step "6/6" "初始化 Git 仓库"
-  init_wiki_git "$WIKI_TARGET" "$WIKI_NAME"
+  # ── Phase 3: Create Wiki ──
+  stepn "$current_step" "$total_steps" "Creating wiki"
+  setup_wiki
+  current_step=$((current_step + 1))
+
+  # ── Phase 4: Finalize ──
+  stepn "$current_step" "$total_steps" "Finalizing"
+  init_git_repo "$WIKI_TARGET" "$WIKI_NAME"
   cleanup_installer "$WIKI_TARGET"
-
-  # ── Done ──
-  printf "\n${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}\n"
-  printf "${BOLD}${GREEN}  ✓ %s 知识库就绪！${RESET}\n" "$WIKI_NAME"
-  printf "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}\n"
-  printf "\n${BOLD}下一步:${RESET}\n"
-  local abs_target
-  abs_target="$(cd "$WIKI_TARGET" 2>/dev/null && pwd)" || abs_target="$WIKI_TARGET"
-  if [[ "$abs_target" != "$(pwd)" ]]; then
-    printf "  1. cd %s\n" "$WIKI_TARGET"
-    printf "  2. open -a Obsidian .\n"
-    printf "  3. claude\n"
-  else
-    printf "  1. open -a Obsidian .\n"
-    printf "  2. claude\n"
-  fi
-  printf "  然后: ${DIM}帮我 ingest 这篇文章: <URL>${RESET}\n\n"
+  print_success "$WIKI_NAME" "$WIKI_TARGET"
 }
 
 parse_args "$@"

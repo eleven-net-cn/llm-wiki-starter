@@ -4,6 +4,9 @@
 # Obsidian
 .obsidian/
 
+# Node.js
+node_modules/
+
 # Temporary
 *.tmp
 *.bak
