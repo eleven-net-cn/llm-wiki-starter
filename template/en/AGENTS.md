@@ -36,6 +36,7 @@ Three-layer structure:
 │   ├── Changelog.md            # Operation timeline log
 │   └── Overview.md             # Wiki landing page
 ├── canvas/                     # JSON Canvas visual maps
+├── templates/                  # Page templates (one per type, used by LLM)
 ├── CLAUDE.md                   # Claude Code schema (imports this file)
 ├── AGENTS.md                   # This schema file
 └── README.md                   # Repository documentation
@@ -45,9 +46,11 @@ Domain directories under `raw/` and `wiki/` are created automatically during the
 
 ## Page Format
 
-Every wiki page uses this structure:
+### Frontmatter Spec
 
-```markdown
+Every wiki page must include this frontmatter:
+
+```yaml
 ---
 title: Page Title
 type: entity | concept | topic | comparison | source | synthesis
@@ -62,23 +65,20 @@ related_concepts: []                   # Optional, concept pages only
 source_url: https://...                # Optional, source pages only
 media: article | paper | video         # Optional, source pages only
 ---
-
-# Page Title
-
-Brief definition or one-paragraph summary.
-
-## Key Points
-
-- Bullet list covering core information.
-
-## Details
-
-Detailed content organized by sub-headings.
-
-## Related
-
-- [[related-page]] — Brief relationship description
 ```
+
+### Body Structure
+
+When creating a wiki page, **read `templates/<type>.md` first** to get the matching template, then strictly follow its section structure. Do not invent your own sections.
+
+| type | Template file | Purpose |
+|------|--------------|---------|
+| entity | `templates/entity.md` | Products, projects, organizations, people |
+| concept | `templates/concept.md` | Concept definitions |
+| topic | `templates/topic.md` | Domain topics, comprehensive guides |
+| comparison | `templates/comparison.md` | Comparative analysis |
+| source | `templates/source.md` | Source material summaries |
+| synthesis | `templates/synthesis.md` | Cross-cutting analysis & insights |
 
 ### Page Naming
 
@@ -87,37 +87,8 @@ Detailed content organized by sub-headings.
 - Summary pages: `Summary：` prefix + short name
 - Concept pages: descriptive name, e.g., `Transformer.md`, `RAG (Retrieval-Augmented Generation).md`
 
-### Concept Page Format
+### Concept Page Principles
 
-Concept pages (`type: concept`) live in `wiki/concepts/` and use an enhanced structure:
-
-```markdown
----
-title: Concept Name
-type: concept
-tags: [concept, ...domain-tags]
-aliases: [alt-name]
-created: YYYY-MM-DD
-updated: YYYY-MM-DD
-sources: []
-related_concepts:
-  - "[[Related Concept]]"
-confidence: high | medium | low
----
-
-# Concept Name
-
-> One-sentence authoritative definition (≤50 words)
-
-## What It Is
-## Why It Matters
-## How It Works
-## Common Misconceptions
-## vs. Adjacent Concepts
-## Related
-```
-
-Concept page principles:
 - 100–250 lines each, focused on authoritative definitions
 - `confidence: high` when backed by `raw/` sources; `confidence: medium` when based on training knowledge alone
 - If a detailed domain page already exists, keep the concept page as a concise definition + link — don't duplicate content

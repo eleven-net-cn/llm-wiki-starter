@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-VERSION="1.0.0-beta.0"
+VERSION="1.0.0"
 TEMPLATE_REPO="eleven-net-cn/llm-wiki-starter"
 TEMPLATE_REPO_URL="https://github.com/$TEMPLATE_REPO"
 
@@ -189,11 +189,11 @@ detect_installed() {
 print_detection_results() {
   printf "\n"
 
-  # Obsidian
-  if $HAS_OBSIDIAN; then
-    printf "  ${GREEN}✓${RESET}  %-20s ${DIM}installed${RESET}\n" "Obsidian"
+  # Claude Code
+  if $HAS_CLAUDE_CODE; then
+    printf "  ${GREEN}✓${RESET}  %-20s ${DIM}installed${RESET}\n" "Claude Code"
   else
-    printf "  ${YELLOW}✗${RESET}  %-20s ${CYAN}wiki editor${RESET}\n" "Obsidian"
+    printf "  ${YELLOW}✗${RESET}  %-20s ${CYAN}recommended AI agent${RESET}\n" "Claude Code"
   fi
 
   # Node.js
@@ -203,11 +203,11 @@ print_detection_results() {
     printf "  ${YELLOW}✗${RESET}  %-20s ${CYAN}required for Claude Code${RESET}\n" "Node.js"
   fi
 
-  # Claude Code
-  if $HAS_CLAUDE_CODE; then
-    printf "  ${GREEN}✓${RESET}  %-20s ${DIM}installed${RESET}\n" "Claude Code"
+  # Obsidian
+  if $HAS_OBSIDIAN; then
+    printf "  ${GREEN}✓${RESET}  %-20s ${DIM}installed${RESET}\n" "Obsidian"
   else
-    printf "  ${YELLOW}✗${RESET}  %-20s ${CYAN}recommended AI agent${RESET}\n" "Claude Code"
+    printf "  ${YELLOW}✗${RESET}  %-20s ${CYAN}wiki editor${RESET}\n" "Obsidian"
   fi
 
   # Obsidian Skills
@@ -585,11 +585,11 @@ install_skills() {
 run_install() {
   [[ "$OS" == "macos" ]] && ! $HAS_BREW && ensure_brew || true
 
-  install_obsidian  || true
-  install_node      || true
+  install_node        || true
   install_claude_code || true
-  install_skills    || true
-  install_git       || true
+  install_obsidian    || true
+  install_skills      || true
+  install_git         || true
 
   # Final check — report what's still missing
   if ! $HAS_OBSIDIAN || ! $HAS_NODE || ! $HAS_CLAUDE_CODE || ! $HAS_GIT; then
@@ -983,10 +983,15 @@ EOF
 # ═══════════════════════════════════════════════════════════════════════════════
 
 main() {
-  printf "\n${BOLD}${GREEN}┌──────────────────────────────────────────────────┐${RESET}\n"
-  printf "${BOLD}${GREEN}│${RESET}  ${BOLD}${GREEN}LLM Wiki Starter${RESET} v%-30s${BOLD}${GREEN}│${RESET}\n" "$VERSION"
-  printf "${BOLD}${GREEN}│${RESET}  ${DIM}Knowledge base scaffolding for LLM Wiki${RESET}         ${BOLD}${GREEN}│${RESET}\n"
-  printf "${BOLD}${GREEN}└──────────────────────────────────────────────────┘${RESET}\n\n"
+  local url_line="By eleven-net-cn  ${TEMPLATE_REPO_URL}"
+  local inner_w=73
+  local border
+  border=$(printf '%*s' "$inner_w" '' | tr ' ' '─')
+  printf "\n${BOLD}${GREEN}┌${border}┐${RESET}\n"
+  printf "${BOLD}${GREEN}│${RESET}  ${BOLD}${GREEN}LLM Wiki Starter${RESET} v%-$((inner_w - 20))s${BOLD}${GREEN}│${RESET}\n" "$VERSION"
+  printf "${BOLD}${GREEN}│${RESET}  ${DIM}%-$((inner_w - 2))s${RESET}${BOLD}${GREEN}│${RESET}\n" "Knowledge base scaffolding for LLM Wiki"
+  printf "${BOLD}${GREEN}│${RESET}  ${DIM}%-$((inner_w - 2))s${RESET}${BOLD}${GREEN}│${RESET}\n" "$url_line"
+  printf "${BOLD}${GREEN}└${border}┘${RESET}\n\n"
 
   detect_os
   info "OS: ${CYAN}$OS${RESET}  |  Package manager: ${CYAN}${PKG_MGR:-none}${RESET}"

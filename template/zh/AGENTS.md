@@ -34,6 +34,7 @@
 │   ├── 操作日志.md             # 时间线操作日志
 │   └── 知识库概览.md           # 知识库落地页
 ├── canvas/                     # JSON Canvas 可视化地图
+├── templates/                  # 页面模板（每种 type 一个，LLM 创建页面时引用）
 ├── CLAUDE.md                   # Claude Code Schema（导入本文件）
 ├── AGENTS.md                   # 本 Schema 文件
 └── README.md                   # 仓库文档
@@ -43,9 +44,11 @@
 
 ## 页面格式
 
-每个 wiki 页面使用以下结构：
+### Frontmatter 规范
 
-```markdown
+每个 wiki 页面必须包含以下 frontmatter：
+
+```yaml
 ---
 title: 页面标题
 type: entity | concept | topic | comparison | source | synthesis
@@ -60,23 +63,20 @@ related_concepts: []               # 可选，concept 类型页面使用
 source_url: https://...            # 可选，仅 source 类型页面
 media: article | paper | video     # 可选，仅 source 类型页面
 ---
-
-# 页面标题
-
-简要定义或一段话摘要。
-
-## 要点
-
-- 要点列表，覆盖核心信息。
-
-## 详情
-
-按子标题组织的详细内容。
-
-## 相关
-
-- [[related-page]] — 关系简述
 ```
+
+### 正文结构
+
+创建 wiki 页面时，**必须先读取 `templates/<type>.md`** 获取对应类型的模板，严格按模板定义的章节结构组织正文。禁止自行编造章节结构。
+
+| type | 模板文件 | 用途 |
+|------|---------|------|
+| entity | `templates/entity.md` | 产品、项目、组织、人物 |
+| concept | `templates/concept.md` | 概念定义与扫盲 |
+| topic | `templates/topic.md` | 领域主题、综合指南 |
+| comparison | `templates/comparison.md` | 对比分析 |
+| source | `templates/source.md` | 资料摘要 |
+| synthesis | `templates/synthesis.md` | 交叉分析与洞察 |
 
 ### 页面命名
 
@@ -85,37 +85,8 @@ media: article | paper | video     # 可选，仅 source 类型页面
 - 资料摘要页：`资料摘要：` 前缀 + 简称，如 `资料摘要：MCP 协议.md`
 - 概念页：描述性名称，如 `Transformer.md`、`RAG（检索增强生成）.md`
 
-### 概念页格式
+### 概念页原则
 
-概念页（`type: concept`）位于 `wiki/概念/`，使用增强格式：
-
-```markdown
----
-title: 概念名
-type: concept
-tags: [概念, ...领域标签]
-aliases: [别名]
-created: YYYY-MM-DD
-updated: YYYY-MM-DD
-sources: []
-related_concepts:
-  - "[[相关概念]]"
-confidence: high | medium | low
----
-
-# 概念名
-
-> 一句话权威定义（≤50 字）
-
-## 是什么
-## 为什么重要
-## 工作原理
-## 常见误解
-## 与相邻概念的区别
-## 相关
-```
-
-概念页原则：
 - 每页 100–250 行，聚焦权威定义和扫盲
 - 有 `raw/` 资料支撑的标 `confidence: high`，纯基于训练知识的标 `confidence: medium`
 - 已有领域详解页的概念，概念页做精简定义 + 链接到领域详解页，不重复内容

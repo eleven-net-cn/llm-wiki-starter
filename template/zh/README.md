@@ -44,4 +44,4 @@ LLM 会查阅 wiki 页面并综合回答，附带 `[[wikilink]]` 引用。
 - `raw/` — 源文档（人类管理，不可变）
 - `wiki/` — LLM 编译的知识页面
 - `CLAUDE.md` — [Claude Code](https://claude.ai/claude-code) Schema
-- `AGENTS.md` — [OpenCode](https://github.com/anomalyco/opencode) 及其它
+- `AGENTS.md` — 兼容 [AGENTS.md 规范](https://github.com/anthropics/AGENTS-md-spec)的共享 Schema（Codex、Copilot、Gemini CLI、OpenCode 等）

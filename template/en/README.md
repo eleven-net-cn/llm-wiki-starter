@@ -44,4 +44,4 @@ Checks for orphan pages, dead links, stale content, missing concepts, and tag vi
 - `raw/` — Source materials (human-managed, immutable)
 - `wiki/` — LLM-compiled knowledge pages
 - `CLAUDE.md` — Schema for [Claude Code](https://claude.ai/claude-code)
-- `AGENTS.md` — Schema for [OpenCode](https://github.com/anomalyco/opencode) and others
+- `AGENTS.md` — Shared schema for [AGENTS.md-compatible](https://github.com/anthropics/AGENTS-md-spec) agents (Codex, Copilot, Gemini CLI, OpenCode, etc.)
