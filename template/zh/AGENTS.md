@@ -5,7 +5,7 @@
 > 人类负责策划资料来源和提出问题；LLM 负责所有的总结、交叉引用、归档和维护工作。
 >
 > 本文件是共享的 wiki 规范（Single Source of Truth）。Claude Code 通过 `@AGENTS.md` 导入，
-> OpenCode 和 Gemini CLI 直接读取。**绝不将本文件内容复制到 CLAUDE.md。**
+> Codex、Copilot、OpenCode、Gemini CLI 等直接读取。**绝不将本文件内容复制到 CLAUDE.md。**
 
 ## 架构
 

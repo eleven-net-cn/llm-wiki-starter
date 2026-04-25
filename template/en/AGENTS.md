@@ -6,7 +6,7 @@
 > summarization, cross-referencing, archival, and maintenance.
 >
 > This is the shared schema (Single Source of Truth). Claude Code imports it
-> via `@AGENTS.md`. OpenCode and Gemini CLI read it directly.
+> via `@AGENTS.md`. Codex, Copilot, OpenCode, Gemini CLI, etc. read it directly.
 > **Never duplicate this content into CLAUDE.md.**
 
 ## Architecture
