@@ -4,7 +4,7 @@
 
 一条命令自动搭建 [Andrej Karpathy 的 LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) AI 知识库。
 
-自动安装 Claude Code + Obsidian + 全套插件（Skills & Plugins），让 AI 帮你持续积累和维护个人知识体系。
+自动安装 Claude Code + Obsidian + 推荐的插件（Skills & Plugins & 主题 & 快捷键）等，让 AI 帮你持续积累和维护个人知识体系。
 
 自动兼容 Claude Code、Codex、Copilot、Gemini CLI、OpenCode 等主流 AI Agent 使用。
 
@@ -14,9 +14,22 @@
 curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash
 ```
 
+参数示例：
+
+```bash
+# 仅检测、安装全局工具套件（Claude Code、Obsidian、NodeJS、Agent Skills 等）
+curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash -s -- --only-tools
+
+# 跳过全局工具套件的检测、安装，仅创建 wiki 知识库
+curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash -s -- --only-wiki
+
+# 跳过全局工具套件的检测、安装和 wiki 知识库创建，仅在当前所在仓库初始化配置推荐的 Obsidian 插件、主题、快捷键等配置
+curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash -s -- --only-obsidian
+```
+
 ### 参数
 
-支持的参数，通常不需要，按需选用：
+支持的参数，按需选用：
 
 | 参数 | 说明 | 默认值 |
 |------|------|--------|

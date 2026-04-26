@@ -4,7 +4,7 @@ English | [简体中文](./README.zh-CN.md)
 
 One command to scaffold an [Andrej Karpathy's LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) AI knowledge base.
 
-Auto-installs Claude Code + Obsidian + full plugin suite (Skills & Plugins), so AI can continuously build and maintain your personal knowledge system.
+Auto-installs Claude Code + Obsidian + recommended plugins (Skills & Plugins & Theme & Shortcuts), so AI can continuously build and maintain your personal knowledge system.
 
 Compatible with Claude Code, Codex, Copilot, Gemini CLI, OpenCode, and other mainstream AI agents out of the box.
 
@@ -14,9 +14,22 @@ Compatible with Claude Code, Codex, Copilot, Gemini CLI, OpenCode, and other mai
 curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash
 ```
 
+**With options:**
+
+```bash
+# Only detect and install global tools (Claude Code, Obsidian, NodeJS, Agent Skills, etc.)
+curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash -s -- --only-tools
+
+# Skip global tools detection/installation, only create wiki knowledge base
+curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash -s -- --only-wiki
+
+# Skip tools and wiki creation, only configure Obsidian (plugins, theme, shortcuts) in current vault
+curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash -s -- --only-obsidian
+```
+
 ### Options
 
-Supported options, usually not needed — use as needed:
+Supported options (use as needed):
 
 | Option | Description | Default |
 |--------|-------------|---------|
