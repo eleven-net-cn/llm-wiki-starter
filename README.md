@@ -8,12 +8,14 @@ Auto-installs Claude Code + Obsidian + recommended plugins (Skills & Plugins & T
 
 Compatible with Claude Code, Codex, Copilot, Gemini CLI, OpenCode, and other mainstream AI agents out of the box.
 
+![ai-wiki](./assets/ai-wiki.png)
+
 ## Installation
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash
 ```
-![create-ai-wiki](./create-ai-wiki.svg)
+![create-ai-wiki](./assets/create-ai-wiki.svg)
 
 **With options:**
 

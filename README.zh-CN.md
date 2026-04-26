@@ -8,12 +8,14 @@
 
 自动兼容 Claude Code、Codex、Copilot、Gemini CLI、OpenCode 等主流 AI Agent 使用。
 
+![ai-wiki.zh-CN](./assets/ai-wiki.zh-CN.png)
+
 ## 安装
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash
 ```
-![create-ai-wiki](./create-ai-wiki.svg)
+![create-ai-wiki](./assets/create-ai-wiki.svg)
 
 参数示例：
 
