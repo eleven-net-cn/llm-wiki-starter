@@ -13,6 +13,7 @@
 ```bash
 curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash
 ```
+![create-ai-wiki](./create-ai-wiki.svg)
 
 参数示例：
 
