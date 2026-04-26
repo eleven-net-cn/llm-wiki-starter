@@ -1,0 +1,14 @@
+{
+  "interfaceFontSize": 14,
+  "attachmentFolderPath": "raw/assets",
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false,
+  "showFrontmatter": true,
+  "defaultViewMode": "preview",
+  "foldHeading": false,
+  "foldIndent": true,
+  "alwaysUpdateLinks": true,
+  "readableLineLength": false,
+  "showLineNumber": false,
+  "promptDelete": false
+}

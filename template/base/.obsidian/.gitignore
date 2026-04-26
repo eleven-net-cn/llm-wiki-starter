@@ -1,0 +1,9 @@
+# Obsidian workspace (personal layout)
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
+# Obsidian cache
+.obsidian/cache
+
+# User-specific settings that shouldn't be shared
+.obsidian/community-plugins.json.bak

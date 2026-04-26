@@ -4,13 +4,19 @@
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash
-#   bash install.sh [--name <name>] [--dir <dir>] [--non-interactive] [--skip-install]
+#   bash install.sh [OPTIONS]
+#
+# Modes:
+#   Default:      Install tools → Create wiki → Install Obsidian plugins
+#   --only-tools: Install all tools only (no wiki creation)
+#   --only-obsidian: Install Obsidian plugins/themes/config only (merge with existing)
+#   --only-wiki:  Create wiki from template only (skip tools installation)
 #
 # Flow: Detect → Install Tools → Create Wiki → Finalize
 
 set -euo pipefail
 
-VERSION="1.0.0"
+VERSION="1.0.1"
 TEMPLATE_REPO="eleven-net-cn/llm-wiki-starter"
 TEMPLATE_REPO_URL="https://github.com/$TEMPLATE_REPO"
 
@@ -27,6 +33,12 @@ WIKI_LANG=""
 WIKI_TARGET=""
 TEMPLATE_TMPDIR=""
 CLONE_STATUS=""
+LLM_WIKI_DIR="${LLM_WIKI_DIR:-}"  # Environment variable for custom wiki location
+
+# Mode flags
+ONLY_TOOLS=false
+ONLY_OBSIDIAN=false
+ONLY_WIKI=false
 
 # Detection flags (set by detect_installed)
 HAS_GIT=false
@@ -89,6 +101,46 @@ prompt_confirm() {
   result="${result:-$default}"
   lower=$(echo "$result" | tr '[:upper:]' '[:lower:]')
   [[ "$lower" == "y" || "$lower" == "yes" ]]
+}
+
+# Prompt wiki name with duplicate detection
+prompt_wiki_name() {
+  local default_name="$1" result target_dir
+
+  if $NON_INTERACTIVE; then
+    echo "$default_name"
+    return 0
+  fi
+
+  while true; do
+    printf "  ${GREEN}>${RESET} ${BOLD}Please enter wiki name${RESET} ${DIM}(Default: %s)${RESET}: " "$default_name" >&2
+    read -r result < /dev/tty
+    result="${result:-$default_name}"
+
+    # Determine target directory
+    if [[ -n "$WIKI_DIR" ]]; then
+      target_dir="$WIKI_DIR"
+    elif [[ -n "$LLM_WIKI_DIR" ]]; then
+      target_dir="$LLM_WIKI_DIR"
+    else
+      target_dir="$(pwd)/$result"
+    fi
+
+    # Check if directory already exists
+    if [[ -d "$target_dir" ]]; then
+      if [[ -f "$target_dir/CLAUDE.md" ]]; then
+        printf "  ${YELLOW}⚠${RESET} Directory ${CYAN}$target_dir${RESET} already contains an LLM Wiki\n" >&2
+      else
+        printf "  ${YELLOW}⚠${RESET} Directory ${CYAN}$target_dir${RESET} already exists\n" >&2
+      fi
+      printf "  ${YELLOW}Please choose a different name, or use --dir to specify a different location${RESET}\n" >&2
+      # Keep same default, don't suggest new name
+      continue
+    else
+      echo "$result"
+      return 0
+    fi
+  done
 }
 
 prompt_language() {
@@ -424,6 +476,62 @@ install_node() {
   fi
 }
 
+install_jq() {
+  command -v jq &>/dev/null && return 0
+
+  info "Installing ${GREEN}jq${RESET} (JSON processor)..."
+  local installed=false
+
+  case "$OS" in
+    macos)
+      if command -v brew &>/dev/null; then
+        if brew install jq 2>&1; then
+          installed=true
+        fi
+      fi
+      ;;
+    linux)
+      if command -v apt-get &>/dev/null; then
+        if sudo apt-get install -y -qq jq 2>&1; then
+          installed=true
+        fi
+      elif ! $installed && command -v dnf &>/dev/null; then
+        if sudo dnf install -y -q jq 2>&1; then
+          installed=true
+        fi
+      elif ! $installed && command -v pacman &>/dev/null; then
+        if sudo pacman -S --noconfirm jq 2>&1; then
+          installed=true
+        fi
+      fi
+      ;;
+    windows)
+      if command -v winget &>/dev/null; then
+        if winget install jqlang.jq --accept-source-agreements --accept-package-agreements 2>&1; then
+          installed=true
+        fi
+      fi
+      if ! $installed && command -v choco &>/dev/null; then
+        if choco install jq -y 2>&1; then
+          installed=true
+        fi
+      fi
+      if ! $installed && command -v scoop &>/dev/null; then
+        if scoop install jq 2>&1; then
+          installed=true
+        fi
+      fi
+      ;;
+  esac
+
+  if $installed && command -v jq &>/dev/null; then
+    success "jq installed ($(jq --version 2>/dev/null | head -1))"
+  else
+    warn "jq installation failed — will use Python fallback for JSON merge"
+    return 1
+  fi
+}
+
 # ─── Claude Code ─────────────────────────────────────────────────────────────
 
 install_claude_code() {
@@ -726,6 +834,17 @@ replace_placeholders() {
   done
 }
 
+# Spinner animation for download progress
+_spinner() {
+  local chars='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+  local i=0
+  while true; do
+    printf "\r  ${CYAN}${chars:$i:1}${RESET} ${DIM}Downloading...${RESET}"
+    i=$(( (i + 1) % 10 ))
+    sleep 0.1
+  done
+}
+
 download_plugin() {
   local repo="$1" plugin_id="$2" target_dir="$3"
   local plugin_dir="$target_dir/.obsidian/plugins/$plugin_id"
@@ -733,13 +852,19 @@ download_plugin() {
 
   mkdir -p "$plugin_dir"
 
+  # Show download indicator
+  printf "  ${CYAN}↓${RESET} ${DIM}Downloading %s...${RESET}" "$plugin_id"
+
   local ok=true
   for file in main.js manifest.json; do
-    if ! curl -fsSL "$base_url/$file" -o "$plugin_dir/$file" 2>/dev/null; then
+    if ! curl -fsSL --max-time 30 "$base_url/$file" -o "$plugin_dir/$file" 2>/dev/null; then
       ok=false; break
     fi
   done
-  curl -fsSL "$base_url/styles.css" -o "$plugin_dir/styles.css" 2>/dev/null || true
+  curl -fsSL --max-time 30 "$base_url/styles.css" -o "$plugin_dir/styles.css" 2>/dev/null || true
+
+  # Clear download indicator and show result
+  printf "\r%50s\r" ""  # Clear the line
 
   if $ok && [[ -s "$plugin_dir/manifest.json" ]]; then
     printf "    ${GREEN}✓${RESET} %s\n" "$plugin_id"
@@ -756,31 +881,85 @@ install_obsidian_plugins() {
   local plugins_installed=()
 
   mkdir -p "$wiki_dir/.obsidian/plugins"
+  mkdir -p "$wiki_dir/.obsidian/themes"
 
-  local all_plugins=(
-    "blacksmithgu/obsidian-dataview|dataview"
-    "SilentVoid13/Templater|templater-obsidian"
-    "Vinzent03/obsidian-git|obsidian-git"
-    "platers/obsidian-linter|obsidian-linter"
-    "pjeby/tag-wrangler|tag-wrangler"
-    "TfTHacker/obsidian42-strange-new-worlds|obsidian42-strange-new-worlds"
-    "mirnovov/obsidian-homepage|homepage"
-    "SebastianMC/obsidian-custom-sort|custom-sort"
+  # ─── Plugin Categories ─────────────────────────────────────────────────────
+  # Core plugins: Required for llm-wiki functionality (data, templates, git, linting)
+  # UX plugins:   Enhance Obsidian editing experience (toolbar, search, navigation, diagrams)
+  # ────────────────────────────────────────────────────────────────────────────
+
+  # Core plugins (llm-wiki core functionality)
+  local core_plugins=(
+    "blacksmithgu/obsidian-dataview|dataview"              # Query and display data from notes
+    "SilentVoid13/Templater|templater-obsidian"            # Templates and automation
+    "Vinzent03/obsidian-git|obsidian-git"                  # Git version control
+    "platers/obsidian-linter|obsidian-linter"              # Markdown linting
+    "pjeby/tag-wrangler|tag-wrangler"                      # Tag management
+    "TfTHacker/obsidian42-strange-new-worlds|obsidian42-strange-new-worlds"  # Link context
+    "mirnovov/obsidian-homepage|homepage"                  # Dashboard/homepage
+    "SebastianMC/obsidian-custom-sort|custom-sort"         # Custom file sorting
+  )
+
+  # UX plugins (Obsidian editing experience enhancements)
+  local ux_plugins=(
+    "scambier/obsidian-omnisearch|omnisearch"              # Fuzzy search across vault
+    "darlal/obsidian-switcher-plus|darlal-switcher-plus"   # Quick switcher with headings
+    "kepano/obsidian-minimal-settings|obsidian-minimal-settings"  # Minimal theme settings
+    "kepano/obsidian-hider|obsidian-hider"                 # Hide UI elements (cleaner interface)
+    "PKM-er/obsidian-editing-toolbar|editing-toolbar"      # MS Word-like editing toolbar + F11 fullscreen
+    "zsviczian/obsidian-excalidraw-plugin|obsidian-excalidraw-plugin"  # Hand-drawn style diagrams
+    "guopenghui/obsidian-quiet-outline|obsidian-quiet-outline"  # Enhanced outline view
+    "yonatan-reicher/obsidian-open-in-terminal|open-in-terminal"  # Open vault in terminal
   )
 
   # Skip obsidian-git if Git is not available
   if ! $HAS_GIT; then
     info "Git not available — skipping ${GREEN}obsidian-git${RESET} plugin"
     local filtered=()
-    for entry in "${all_plugins[@]}"; do
+    for entry in "${core_plugins[@]}"; do
       [[ "$entry" == *"|obsidian-git" ]] && continue
       filtered+=("$entry")
     done
-    all_plugins=("${filtered[@]}")
+    core_plugins=("${filtered[@]}")
   fi
 
-  info "Installing Obsidian plugins..."
-  for entry in "${all_plugins[@]}"; do
+  printf "\n${BOLD}Obsidian Setup:${RESET}\n\n"
+
+  # Install Minimal theme
+  printf "  ${DIM}Theme:${RESET}\n"
+  local theme_dir="$wiki_dir/.obsidian/themes/Minimal"
+  local theme_url="https://github.com/kepano/obsidian-minimal/releases/latest/download"
+  if [[ ! -d "$theme_dir" ]]; then
+    mkdir -p "$theme_dir"
+    printf "  ${CYAN}↓${RESET} ${DIM}Downloading Minimal theme...${RESET}"
+    if curl -fsSL --max-time 30 "$theme_url/manifest.json" -o "$theme_dir/manifest.json" 2>/dev/null && \
+       curl -fsSL --max-time 30 "$theme_url/theme.css" -o "$theme_dir/theme.css" 2>/dev/null; then
+      printf "\r%50s\r" ""
+      printf "    ${GREEN}✓${RESET} Minimal theme ${DIM}(clean, distraction-free)${RESET}\n"
+    else
+      printf "\r%50s\r" ""
+      rm -rf "$theme_dir"
+      printf "    ${YELLOW}⚠${RESET} Minimal theme ${DIM}(download failed, network timeout)${RESET}\n"
+    fi
+  else
+    printf "    ${GREEN}✓${RESET} Minimal theme ${DIM}(exists)${RESET}\n"
+  fi
+
+  # Install core plugins (llm-wiki core)
+  printf "\n  ${DIM}Core plugins (llm-wiki core):${RESET}\n"
+  for entry in "${core_plugins[@]}"; do
+    local repo="${entry%%|*}" id="${entry##*|}"
+    if [[ -d "$wiki_dir/.obsidian/plugins/$id" ]]; then
+      printf "    ${GREEN}✓${RESET} %s ${DIM}(exists)${RESET}\n" "$id"
+      plugins_installed+=("$id")
+      continue
+    fi
+    download_plugin "$repo" "$id" "$wiki_dir" && plugins_installed+=("$id")
+  done
+
+  # Install UX plugins (Obsidian experience)
+  printf "\n  ${DIM}UX plugins (Obsidian experience):${RESET}\n"
+  for entry in "${ux_plugins[@]}"; do
     local repo="${entry%%|*}" id="${entry##*|}"
     if [[ -d "$wiki_dir/.obsidian/plugins/$id" ]]; then
       printf "    ${GREEN}✓${RESET} %s ${DIM}(exists)${RESET}\n" "$id"
@@ -800,7 +979,7 @@ install_obsidian_plugins() {
     done
     json+="]"
     echo "$json" > "$wiki_dir/.obsidian/community-plugins.json"
-    success "${#plugins_installed[@]} plugins configured"
+    printf "\n  ${GREEN}✓${RESET} ${BOLD}%d${RESET} plugins configured\n" "${#plugins_installed[@]}"
   fi
 
   # Configure custom-sort plugin (must not be suspended)
@@ -810,6 +989,21 @@ install_obsidian_plugins() {
 {"suspended":false,"statusBarEntryEnabled":true,"notificationsEnabled":true,"customSortContextSubmenu":true}
 CSJSON
   fi
+
+  # Print Obsidian configuration summary
+  printf "\n  ${DIM}Appearance:${RESET}\n"
+  printf "    ${GREEN}•${RESET} Accent color: ${GREEN}#6b9b6b${RESET} ${DIM}(wiki green)${RESET}\n"
+  printf "    ${GREEN}•${RESET} Base font size: 16px\n"
+
+  printf "\n  ${DIM}Key shortcuts:${RESET}\n"
+  printf "    ${GREEN}•${RESET} ${BOLD}Cmd+Shift+F${RESET}    ${DIM}→ Omnisearch (fuzzy search)${RESET}\n"
+  printf "    ${GREEN}•${RESET} ${BOLD}Cmd+R${RESET}          ${DIM}→ Quick switcher (headings)${RESET}\n"
+  printf "    ${GREEN}•${RESET} ${BOLD}Cmd+←/→${RESET}        ${DIM}→ Navigate back/forward${RESET}\n"
+  printf "    ${GREEN}•${RESET} ${BOLD}Cmd+Shift+B${RESET}    ${DIM}→ Toggle left sidebar${RESET}\n"
+  printf "    ${GREEN}•${RESET} ${BOLD}Cmd+Shift+L${RESET}    ${DIM}→ Toggle right sidebar${RESET}\n"
+  printf "    ${GREEN}•${RESET} ${BOLD}Cmd+F11${RESET}        ${DIM}→ Workplace fullscreen${RESET}\n"
+  printf "    ${GREEN}•${RESET} ${BOLD}Cmd+Shift+F11${RESET}  ${DIM}→ Editor fullscreen focus${RESET}\n"
+  printf "\n"
 }
 
 setup_wiki() {
@@ -821,7 +1015,7 @@ setup_wiki() {
       info "Set up your new wiki:"
       WIKI_LANG=$(prompt_language)
       WIKI_NAME="${WIKI_NAME:-my-wiki}"
-      WIKI_NAME=$(prompt_input "Wiki name" "$WIKI_NAME")
+      WIKI_NAME=$(prompt_wiki_name "$WIKI_NAME")
       WIKI_TARGET="${WIKI_DIR:-${LLM_WIKI_DIR:-$(pwd)/$WIKI_NAME}}"
       info "Location: ${CYAN}$(rel_path "$WIKI_TARGET")${RESET}"
       prepare_wiki "$WIKI_TARGET"
@@ -836,14 +1030,17 @@ setup_wiki() {
       info "Set up your new wiki:"
       WIKI_LANG=$(prompt_language)
       WIKI_NAME="${WIKI_NAME:-my-wiki}"
-      WIKI_NAME=$(prompt_input "Wiki name" "$WIKI_NAME")
+      WIKI_NAME=$(prompt_wiki_name "$WIKI_NAME")
       WIKI_TARGET="${WIKI_DIR:-${LLM_WIKI_DIR:-$WIKI_NAME}}"
       info "Location: ${CYAN}$(rel_path "$WIKI_TARGET")${RESET}"
       prepare_wiki "$WIKI_TARGET"
       ;;
   esac
 
-  install_obsidian_plugins "$WIKI_TARGET"
+  # Skip Obsidian plugins in ONLY_WIKI mode (handled separately in main)
+  if ! $ONLY_WIKI; then
+    install_obsidian_plugins "$WIKI_TARGET"
+  fi
   replace_placeholders "$WIKI_TARGET" "$WIKI_NAME"
 }
 
@@ -937,13 +1134,25 @@ parse_args() {
         esac
         shift 2
         ;;
-      --non-interactive) NON_INTERACTIVE=true; shift ;;
+      --non-interactive|--yes|-y) NON_INTERACTIVE=true; shift ;;
       --skip-install)    SKIP_INSTALL=true; shift ;;
+      --only-tools)      ONLY_TOOLS=true; shift ;;
+      --only-obsidian)   ONLY_OBSIDIAN=true; shift ;;
+      --only-wiki)       ONLY_WIKI=true; shift ;;
       --help|-h)         usage; exit 0 ;;
       --version|-v)      echo "llm-wiki-starter v$VERSION"; exit 0 ;;
       *)                 warn "Unknown option: $1"; shift ;;
     esac
   done
+
+  # Validate mutually exclusive mode flags
+  local mode_count=0
+  $ONLY_TOOLS && mode_count=$((mode_count + 1))
+  $ONLY_OBSIDIAN && mode_count=$((mode_count + 1))
+  $ONLY_WIKI && mode_count=$((mode_count + 1))
+  if [[ $mode_count -gt 1 ]]; then
+    fail "Cannot use multiple mode flags together (--only-tools, --only-obsidian, --only-wiki)"
+  fi
 }
 
 usage() {
@@ -953,13 +1162,25 @@ llm-wiki-starter — Create an LLM Wiki knowledge base in one command
 Usage:
   curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash
   bash install.sh [OPTIONS]
+  bash install.sh --only-tools [OPTIONS]
+  bash install.sh --only-obsidian [--dir <vault>] [OPTIONS]
+  bash install.sh --only-wiki [--name <name>] [OPTIONS]
+
+Modes:
+  Default              Install tools → Create wiki → Install Obsidian plugins
+  --only-tools         Install all tools only (no wiki creation)
+                       Use: Add tools to existing environment without creating wiki
+  --only-obsidian      Install Obsidian software + plugins + themes + config
+                       Use: Full Obsidian setup in existing vault (merge with existing config)
+  --only-wiki          Create wiki from template only (skip tools installation)
+                       Use: Fast wiki creation when tools already installed
 
 Options:
   --name <name>        Wiki name (default: my-wiki)
-  --dir <directory>    Target directory (default: ./<name>)
+  --dir <directory>    Target directory (default: ./<name> for wiki, . for --only-obsidian)
   --lang <zh|en>       Wiki language (default: en)
-  --non-interactive    Skip all prompts, use defaults
-  --skip-install       Only create wiki structure, skip tool installation
+  --yes, -y            Skip all prompts, use defaults (non-interactive mode)
+  --skip-install       Only create wiki structure, skip tool installation (deprecated: use --only-wiki)
   --help               Show this help
   --version            Show version
 
@@ -967,15 +1188,90 @@ Environment:
   LLM_WIKI_DIR         Target directory (same as --dir)
 
 Examples:
-  # Interactive install
+  # Full interactive install
   bash install.sh
 
-  # Non-interactive install
-  bash install.sh --non-interactive --name my-ai-wiki
+  # Non-interactive full install
+  bash install.sh --yes --name my-ai-wiki
 
-  # Structure only (no tools)
-  bash install.sh --name test-wiki --dir /tmp/test-wiki --skip-install
+  # Only install tools (for existing wiki)
+  bash install.sh --only-tools
+
+  # Full Obsidian setup in existing vault (software + plugins + config)
+  bash install.sh --only-obsidian --dir ~/Documents/my-vault
+
+  # Only create wiki (tools already installed)
+  bash install.sh --only-wiki --name new-wiki
+
+Configuration Merge (--only-obsidian):
+  When target has existing Obsidian config, new settings are merged:
+  - Obsidian software:   Install if not detected
+  - Plugins & themes:    Download and install from GitHub releases
+  - hotkeys.json:        Add new shortcuts, preserve user's existing shortcuts
+  - app.json:            Override specified fields, preserve others
+  - appearance.json:     Override specified fields, preserve others
+  - community-plugins.json: Merge plugin lists, deduplicate
 EOF
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Config Merge Helpers
+# ═══════════════════════════════════════════════════════════════════════════════
+# Priority: jq (best, cross-platform) → Bash (fallback)
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Merge JSON: template overrides target (deep merge)
+merge_json() {
+  local target_file="$1" template_file="$2"
+
+  # jq: best, cross-platform consistent
+  if command -v jq &>/dev/null; then
+    jq -s '.[0] * .[1]' "$target_file" "$template_file" > "${target_file}.merged" 2>/dev/null
+    mv "${target_file}.merged" "$target_file"
+    return 0
+  fi
+
+  # Bash fallback: backup and use template
+  warn "jq not available — backing up user config and using template"
+  cp "$target_file" "${target_file}.bak"
+  cp "$template_file" "$target_file"
+}
+
+# Merge hotkeys.json
+merge_hotkeys() {
+  local target_dir="$1" template_dir="$2"
+  local target="$target_dir/.obsidian/hotkeys.json"
+  local template="$template_dir/.obsidian/hotkeys.json"
+
+  [[ ! -f "$target" ]] && { cp "$template" "$target"; return 0; }
+  merge_json "$target" "$template"
+}
+
+# Merge community-plugins.json: combine and deduplicate
+merge_plugins() {
+  local target_dir="$1" new_plugins="$2"
+  local target="$target_dir/.obsidian/community-plugins.json"
+
+  [[ ! -f "$target" ]] && { echo "$new_plugins" > "$target"; return 0; }
+
+  # jq: merge and dedupe
+  if command -v jq &>/dev/null; then
+    echo "$(cat "$target") $new_plugins" | jq -s 'add | unique' > "$target"
+    return 0
+  fi
+
+  # Bash: simple dedupe
+  local all=$(grep -oE '"[^"]+"' "$target" "$new_plugins" | tr -d '"' | sort -u | tr '\n' ' ')
+  all=$(echo "$all" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+  # Format as JSON array
+  local result="["
+  local first=true
+  for id in $all; do
+    if $first; then first=false; else result+=","; fi
+    result+="\"$id\""
+  done
+  result+="]"
+  echo "$result" > "$target"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -996,7 +1292,120 @@ main() {
   detect_os
   info "OS: ${CYAN}$OS${RESET}  |  Package manager: ${CYAN}${PKG_MGR:-none}${RESET}"
 
-  # ── Detect first, then determine step count ──
+  # ── Mode: --only-tools (install tools only, no wiki) ──
+  if $ONLY_TOOLS; then
+    info "Mode: ${GREEN}--only-tools${RESET} (install tools only)"
+    detect_installed
+    print_detection_results
+
+    if is_all_installed; then
+      success "All tools already installed"
+    else
+      if $NON_INTERACTIVE || prompt_confirm "Install missing tools?" "Y"; then
+        run_install
+      else
+        print_manual_guide
+      fi
+    fi
+    return 0
+  fi
+
+  # ── Mode: --only-obsidian (install Obsidian + plugins + themes + config) ──
+  if $ONLY_OBSIDIAN; then
+    info "Mode: ${GREEN}--only-obsidian${RESET} (install Obsidian software and all configurations)"
+
+    # Step 1: Detect and install Obsidian software if needed
+    detect_installed
+    if ! $HAS_OBSIDIAN; then
+      info "Obsidian not installed — installing..."
+      install_obsidian
+    else
+      success "Obsidian already installed"
+    fi
+
+    # Step 2: Install jq for JSON merge (recommended)
+    if ! command -v jq &>/dev/null; then
+      info "Installing jq for JSON merge..."
+      install_jq || true  # Continue even if jq install fails (Bash fallback)
+    fi
+
+    # Step 3: Determine target directory
+    WIKI_TARGET="${WIKI_DIR:-.}"
+    if [[ ! -d "$WIKI_TARGET" ]]; then
+      fail "Target directory does not exist: $WIKI_TARGET"
+    fi
+
+    # Step 4: Ensure .obsidian directory exists
+    if [[ ! -d "$WIKI_TARGET/.obsidian" ]]; then
+      info "Creating .obsidian directory..."
+      mkdir -p "$WIKI_TARGET/.obsidian"
+    fi
+
+    # Step 4: Get template for config files
+    detect_dev_mode || download_template
+
+    # Step 5: Install plugins and theme
+    install_obsidian_plugins "$WIKI_TARGET"
+
+    # Step 6: Merge config files (preserve user's existing config)
+    printf "\n${BOLD}Merging config files:${RESET}\n"
+
+    # hotkeys.json
+    if [[ -f "$WIKI_TARGET/.obsidian/hotkeys.json" ]]; then
+      info "Merging ${CYAN}hotkeys.json${RESET} (existing config preserved)"
+      merge_json "$WIKI_TARGET/.obsidian/hotkeys.json" "$LOCAL_TEMPLATE/base/.obsidian/hotkeys.json"
+      printf "  ${GREEN}✓${RESET} hotkeys.json ${DIM}(merged)${RESET}\n"
+    else
+      cp "$LOCAL_TEMPLATE/base/.obsidian/hotkeys.json" "$WIKI_TARGET/.obsidian/"
+      printf "  ${GREEN}✓${RESET} hotkeys.json ${DIM}(new file)${RESET}\n"
+    fi
+
+    # app.json
+    if [[ -f "$WIKI_TARGET/.obsidian/app.json" ]] && [[ -f "$LOCAL_TEMPLATE/base/.obsidian/app.json" ]]; then
+      info "Merging ${CYAN}app.json${RESET}"
+      merge_json "$WIKI_TARGET/.obsidian/app.json" "$LOCAL_TEMPLATE/base/.obsidian/app.json"
+      printf "  ${GREEN}✓${RESET} app.json ${DIM}(merged)${RESET}\n"
+    elif [[ ! -f "$WIKI_TARGET/.obsidian/app.json" ]]; then
+      cp "$LOCAL_TEMPLATE/base/.obsidian/app.json" "$WIKI_TARGET/.obsidian/"
+      printf "  ${GREEN}✓${RESET} app.json ${DIM}(new file)${RESET}\n"
+    fi
+
+    # appearance.json
+    if [[ -f "$LOCAL_TEMPLATE/base/.obsidian/appearance.json" ]]; then
+      if [[ -f "$WIKI_TARGET/.obsidian/appearance.json" ]]; then
+        info "Merging ${CYAN}appearance.json${RESET}"
+        merge_json "$WIKI_TARGET/.obsidian/appearance.json" "$LOCAL_TEMPLATE/base/.obsidian/appearance.json"
+        printf "  ${GREEN}✓${RESET} appearance.json ${DIM}(merged)${RESET}\n"
+      else
+        cp "$LOCAL_TEMPLATE/base/.obsidian/appearance.json" "$WIKI_TARGET/.obsidian/"
+        printf "  ${GREEN}✓${RESET} appearance.json ${DIM}(new file)${RESET}\n"
+      fi
+    fi
+
+    printf "\n${SUCCESS}✓${RESET} Obsidian setup complete!${RESET}\n"
+    cleanup_installer "$WIKI_TARGET"
+    return 0
+  fi
+
+  # ── Mode: --only-wiki (create wiki only, skip tools detection/install) ──
+  if $ONLY_WIKI; then
+    info "Mode: ${GREEN}--only-wiki${RESET} (create wiki template only)"
+
+    # Skip tool detection/installation, start directly from wiki creation
+    stepn "1" "3" "Creating wiki"
+    setup_wiki
+
+    stepn "2" "3" "Obsidian Setup"
+    install_obsidian_plugins "$WIKI_TARGET"
+
+    stepn "3" "3" "Finalizing"
+    init_git_repo "$WIKI_TARGET" "$WIKI_NAME"
+    cleanup_installer "$WIKI_TARGET"
+    print_success "$WIKI_NAME" "$WIKI_TARGET"
+    return 0
+  fi
+
+  # ── Default Mode: Full install ──
   detect_installed
 
   local total_steps=3
@@ -1042,3 +1451,4 @@ main() {
 
 parse_args "$@"
 main
+

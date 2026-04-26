@@ -23,8 +23,10 @@ Supported options, usually not needed — use as needed:
 | `--name <name>` | Wiki name | `my-wiki` |
 | `--dir <directory>` | Target directory | `./<name>` |
 | `--lang <en\|zh>` | Wiki language | `en` |
-| `--non-interactive` | Skip all prompts, use defaults | - |
-| `--skip-install` | Only create structure, skip tool installation | - |
+| `--yes, -y` | Skip all prompts, use defaults | - |
+| `--only-tools` | Install tools only, without creating wiki | - |
+| `--only-wiki` | Create wiki and Obsidian config only, without installing tools | - |
+| `--only-obsidian` | Configure Obsidian in existing vault only | - |
 
 ### What Gets Installed
 
@@ -37,16 +39,42 @@ Detects what's already on your system and only installs what's missing:
 - ✅ **Node.js** — Runtime for Claude Code and Skills CLI
 - ✅ **Git** — Version control (optional)
 
-**Obsidian Plugins**
+**Obsidian**
 
-- ✅ **Dataview** — SQL-like queries on page frontmatter
-- ✅ **Templater** — Template system for new pages
-- ✅ **Linter** — Automatic Markdown formatting
-- ✅ **Custom Sort** — File explorer ordering via sortspec
-- ✅ **Obsidian Git** — Auto git commit/push (requires Git)
-- ✅ **Tag Wrangler** — Rename, merge, and manage tags
-- ✅ **Strange New Worlds** — Show wikilink reference counts
-- ✅ **Homepage** — Set a landing page on vault open
+- **Plugins** (16 plugins: 8 Core + 8 UX)
+
+    Core plugins (required for llm-wiki functionality):
+
+    - ✅ **Dataview** — SQL-like queries on page frontmatter
+    - ✅ **Templater** — Template system for new pages
+    - ✅ **Linter** — Automatic Markdown formatting
+    - ✅ **Custom Sort** — File explorer ordering via sortspec
+    - ✅ **Obsidian Git** — Auto git commit/push (requires Git)
+    - ✅ **Tag Wrangler** — Rename, merge, and manage tags
+    - ✅ **Strange New Worlds** — Show wikilink reference counts
+    - ✅ **Homepage** — Set a landing page on vault open
+
+    UX plugins (enhance Obsidian editing experience):
+
+    - ✅ **Omnisearch** — Fuzzy search across vault
+    - ✅ **Switcher++** — Quick switcher with headings navigation
+    - ✅ **Minimal Theme Settings** — Minimal theme configuration
+    - ✅ **Hider** — Hide UI elements for cleaner interface
+    - ✅ **Editing Toolbar** — MS Word-like toolbar + F11 fullscreen shortcuts
+    - ✅ **Excalidraw** — Hand-drawn style diagrams
+    - ✅ **Quiet Outline** — Enhanced outline view
+    - ✅ **Open in Terminal** — Open vault in terminal
+
+- **Theme**
+
+    ✅ **Minimal** — Clean, distraction-free theme (auto-downloaded)
+
+- **Key Shortcuts**
+
+    - `Cmd+Shift+F` → Omnisearch (fuzzy search)
+    - `Cmd+R` → Quick switcher (headings)
+    - `Cmd+F11` → Workplace fullscreen
+    - `Cmd+Shift+F11` → Editor fullscreen focus
 
 **Agent Skills** (installed globally via [Skills CLI](https://github.com/vercel-labs/skills), shared across agents)
 

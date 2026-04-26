@@ -23,8 +23,10 @@ curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main
 | `--name <name>` | Wiki 名称 | `my-wiki` |
 | `--dir <directory>` | 目标目录 | `./<name>` |
 | `--lang <en\|zh>` | Wiki 语言 | `en` |
-| `--non-interactive` | 跳过所有提示，使用默认值 | - |
-| `--skip-install` | 只创建结构，跳过工具安装 | - |
+| `--yes, -y` | 跳过所有提示，使用默认值 | - |
+| `--only-tools` | 仅安装工具套件，不创建 wiki 知识库 | - |
+| `--only-wiki` | 仅创建 wiki 和 Obsidian 配置，不安装工具 | - |
+| `--only-obsidian` | 仅在已有 vault 中配置 Obsidian | - |
 
 ### 检测安装
 
@@ -37,16 +39,42 @@ curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main
 - ✅ **Node.js** — Claude Code 和 Skills CLI 运行时
 - ✅ **Git** — 版本控制（可选）
 
-**Obsidian 插件**
+**Obsidian**
 
-- ✅ **Dataview** — 基于 frontmatter 的 SQL 风格查询
-- ✅ **Templater** — 页面模板系统
-- ✅ **Linter** — 自动 Markdown 格式化
-- ✅ **Custom Sort** — 通过 sortspec 控制文件浏览器排序
-- ✅ **Obsidian Git** — 自动 git 提交/推送（需 Git）
-- ✅ **Tag Wrangler** — 重命名、合并和管理标签
-- ✅ **Strange New Worlds** — 显示 wikilink 引用计数
-- ✅ **Homepage** — 打开 vault 时设置首页
+- **插件**（16 个插件：8 Core + 8 UX）
+
+    Core 插件（llm-wiki 核心功能必需）：
+
+    - ✅ **Dataview** — 基于 frontmatter 的 SQL 风格查询
+    - ✅ **Templater** — 页面模板系统
+    - ✅ **Linter** — 自动 Markdown 格式化
+    - ✅ **Custom Sort** — 通过 sortspec 控制文件浏览器排序
+    - ✅ **Obsidian Git** — 自动 git 提交/推送（需 Git）
+    - ✅ **Tag Wrangler** — 重命名、合并和管理标签
+    - ✅ **Strange New Worlds** — 显示 wikilink 引用计数
+    - ✅ **Homepage** — 打开 vault 时设置首页
+
+    UX 插件（增强 Obsidian 编辑体验）：
+
+    - ✅ **Omnisearch** — 全库模糊搜索
+    - ✅ **Switcher++** — 快速切换器，支持标题导航
+    - ✅ **Minimal Theme Settings** — Minimal 主题配置
+    - ✅ **Hider** — 隐藏 UI 元素，界面更简洁
+    - ✅ **Editing Toolbar** — Word 风格编辑工具栏 + F11 全屏快捷键
+    - ✅ **Excalidraw** — 手绘风格图表
+    - ✅ **Quiet Outline** — 增强大纲视图
+    - ✅ **Open in Terminal** — 打开 vault 到终端
+
+- **主题**
+
+    ✅ **Minimal** — 简洁、无干扰主题（自动下载）
+
+- **快捷键**
+
+    - `Cmd+Shift+F` → Omnisearch（模糊搜索）
+    - `Cmd+R` → 快速切换器（标题导航）
+    - `Cmd+F11` → 工作区全屏
+    - `Cmd+Shift+F11` → 编辑器全屏专注
 
 **Agent Skills**（通过 [Skills CLI](https://github.com/vercel-labs/skills) 全局安装，跨 Agent 共享）
 
