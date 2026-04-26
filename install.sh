@@ -15,6 +15,7 @@
 # Flow: Detect → Install Tools → Create Wiki → Finalize
 
 set -euo pipefail
+export LC_MESSAGES=C
 
 VERSION="1.0.1"
 TEMPLATE_REPO="eleven-net-cn/llm-wiki-starter"
@@ -923,27 +924,7 @@ install_obsidian_plugins() {
     core_plugins=("${filtered[@]}")
   fi
 
-  printf "\n${BOLD}Obsidian Setup:${RESET}\n\n"
-
-  # Install Minimal theme
-  printf "  ${DIM}Theme:${RESET}\n"
-  local theme_dir="$wiki_dir/.obsidian/themes/Minimal"
-  local theme_url="https://github.com/kepano/obsidian-minimal/releases/latest/download"
-  if [[ ! -d "$theme_dir" ]]; then
-    mkdir -p "$theme_dir"
-    printf "  ${CYAN}↓${RESET} ${DIM}Downloading Minimal theme...${RESET}"
-    if curl -fsSL --max-time 30 "$theme_url/manifest.json" -o "$theme_dir/manifest.json" 2>/dev/null && \
-       curl -fsSL --max-time 30 "$theme_url/theme.css" -o "$theme_dir/theme.css" 2>/dev/null; then
-      printf "\r%50s\r" ""
-      printf "    ${GREEN}✓${RESET} Minimal theme ${DIM}(clean, distraction-free)${RESET}\n"
-    else
-      printf "\r%50s\r" ""
-      rm -rf "$theme_dir"
-      printf "    ${YELLOW}⚠${RESET} Minimal theme ${DIM}(download failed, network timeout)${RESET}\n"
-    fi
-  else
-    printf "    ${GREEN}✓${RESET} Minimal theme ${DIM}(exists)${RESET}\n"
-  fi
+  printf "\n${BOLD}Obsidian Setup:${RESET}\n"
 
   # Install core plugins (llm-wiki core)
   printf "\n  ${DIM}Core plugins (llm-wiki core):${RESET}\n"
@@ -988,6 +969,26 @@ install_obsidian_plugins() {
     cat > "$cs_dir/data.json" <<'CSJSON'
 {"suspended":false,"statusBarEntryEnabled":true,"notificationsEnabled":true,"customSortContextSubmenu":true}
 CSJSON
+  fi
+
+  # Install Minimal theme
+  printf "\n  ${DIM}Theme:${RESET}\n"
+  local theme_dir="$wiki_dir/.obsidian/themes/Minimal"
+  local theme_url="https://github.com/kepano/obsidian-minimal/releases/latest/download"
+  if [[ ! -d "$theme_dir" ]]; then
+    mkdir -p "$theme_dir"
+    printf "  ${CYAN}↓${RESET} ${DIM}Downloading Minimal theme...${RESET}"
+    if curl -fsSL --max-time 30 "$theme_url/manifest.json" -o "$theme_dir/manifest.json" 2>/dev/null && \
+       curl -fsSL --max-time 30 "$theme_url/theme.css" -o "$theme_dir/theme.css" 2>/dev/null; then
+      printf "\r%50s\r" ""
+      printf "    ${GREEN}✓${RESET} Minimal theme ${DIM}(clean, distraction-free)${RESET}\n"
+    else
+      printf "\r%50s\r" ""
+      rm -rf "$theme_dir"
+      printf "    ${YELLOW}⚠${RESET} Minimal theme ${DIM}(download failed, network timeout)${RESET}\n"
+    fi
+  else
+    printf "    ${GREEN}✓${RESET} Minimal theme ${DIM}(exists)${RESET}\n"
   fi
 
   # Print Obsidian configuration summary
