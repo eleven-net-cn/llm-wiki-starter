@@ -48,16 +48,20 @@ Supported options (use as needed):
 
 Detects what's already on your system and only installs what's missing:
 
-**Tools**
+**Tools & Skills**
 
 - ✅ **Claude Code** — Recommended AI agent
-- ✅ **Obsidian** — Wiki editor and visual graph viewer
 - ✅ **Node.js** — Runtime for Claude Code and Skills CLI
+- ✅ **Obsidian** — Wiki editor and visual graph viewer
+- ✅ **[kepano/obsidian-skills](https://github.com/kepano/obsidian-skills)** — Obsidian Markdown, CLI interaction, Bases database views, web scraping (defuddle)
+- ✅ **[axtonliu/visual-skills](https://github.com/axtonliu/axton-obsidian-visual-skills)** — Excalidraw diagrams, Mermaid charts, Obsidian Canvas, JSON Canvas
 - ✅ **Git** — Version control (optional)
+
+> Skills are installed globally via [Skills CLI](https://github.com/vercel-labs/skills), shared across agents.
 
 **Obsidian**
 
-- **Plugins** (16 plugins: 8 Core + 8 UX)
+- **Plugins** (16 plugins: 8 Core + 8 UX, auto-configured with wiki)
 
     Core plugins (required for llm-wiki functionality):
 
@@ -91,11 +95,6 @@ Detects what's already on your system and only installs what's missing:
     - `Cmd+R` → Quick switcher (headings)
     - `Cmd+F11` → Workplace fullscreen
     - `Cmd+Shift+F11` → Editor fullscreen focus
-
-**Agent Skills** (installed globally via [Skills CLI](https://github.com/vercel-labs/skills), shared across agents)
-
-- ✅ **[kepano/obsidian-skills](https://github.com/kepano/obsidian-skills)** — Obsidian Markdown, CLI interaction, Bases database views, web scraping (defuddle)
-- ✅ **[axtonliu/visual-skills](https://github.com/axtonliu/axton-obsidian-visual-skills)** — Excalidraw diagrams, Mermaid charts, Obsidian Canvas, JSON Canvas
 
 **Browser Extension (recommended)**
 

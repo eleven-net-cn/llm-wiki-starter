@@ -48,16 +48,20 @@ curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main
 
 自动检测系统已有工具，只安装缺少的部分：
 
-**工具**
+**工具 & Skills**
 
 - ✅ **Claude Code** — 默认推荐的 AI Agent
-- ✅ **Obsidian** — Wiki 编辑器和可视化图谱查看器
 - ✅ **Node.js** — Claude Code 和 Skills CLI 运行时
+- ✅ **Obsidian** — Wiki 编辑器和可视化图谱查看器
+- ✅ **[kepano/obsidian-skills](https://github.com/kepano/obsidian-skills)** — Obsidian Markdown、CLI 交互、Bases 数据库视图、网页清洗（defuddle）
+- ✅ **[axtonliu/visual-skills](https://github.com/axtonliu/axton-obsidian-visual-skills)** — Excalidraw 图表、Mermaid 可视化、Obsidian Canvas、JSON Canvas
 - ✅ **Git** — 版本控制（可选）
+
+> Skills 通过 [Skills CLI](https://github.com/vercel-labs/skills) 全局安装，跨 Agent 共享。
 
 **Obsidian**
 
-- **插件**（16 个插件：8 Core + 8 UX）
+- **插件**（16 个插件：8 Core + 8 UX，随 wiki 自动配置）
 
     Core 插件（llm-wiki 核心功能必需）：
 
@@ -91,11 +95,6 @@ curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main
     - `Cmd+R` → 快速切换器（标题导航）
     - `Cmd+F11` → 工作区全屏
     - `Cmd+Shift+F11` → 编辑器全屏专注
-
-**Agent Skills**（通过 [Skills CLI](https://github.com/vercel-labs/skills) 全局安装，跨 Agent 共享）
-
-- ✅ **[kepano/obsidian-skills](https://github.com/kepano/obsidian-skills)** — Obsidian Markdown、CLI 交互、Bases 数据库视图、网页清洗（defuddle）
-- ✅ **[axtonliu/visual-skills](https://github.com/axtonliu/axton-obsidian-visual-skills)** — Excalidraw 图表、Mermaid 可视化、Obsidian Canvas、JSON Canvas
 
 **浏览器扩展（推荐使用，不会自动安装）**
 
