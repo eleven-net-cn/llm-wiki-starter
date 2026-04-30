@@ -61,10 +61,11 @@ Detects what's already on your system and only installs what's missing:
 
 **Obsidian**
 
-- **Plugins** (16 plugins: 8 Core + 8 UX, auto-configured with wiki)
+- **Plugins** (17 plugins: 9 Core + 8 UX, auto-configured with wiki)
 
     Core plugins (required for llm-wiki functionality):
 
+    - ✅ **[Claudian](https://github.com/YishenTu/claudian)** — Embed Claude Code / Codex / OpenCode agents in vault, sidebar chat with full agentic capabilities
     - ✅ **Dataview** — SQL-like queries on page frontmatter
     - ✅ **Templater** — Template system for new pages
     - ✅ **Linter** — Automatic Markdown formatting

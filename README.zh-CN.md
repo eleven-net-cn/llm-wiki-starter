@@ -61,10 +61,11 @@ curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main
 
 **Obsidian**
 
-- **插件**（16 个插件：8 Core + 8 UX，随 wiki 自动配置）
+- **插件**（17 个插件：9 Core + 8 UX，随 wiki 自动配置）
 
     Core 插件（llm-wiki 核心功能必需）：
 
+    - ✅ **[Claudian](https://github.com/YishenTu/claudian)** — Vault 内嵌 Claude Code / Codex / OpenCode agent，侧边栏对话直接读写文件
     - ✅ **Dataview** — 基于 frontmatter 的 SQL 风格查询
     - ✅ **Templater** — 页面模板系统
     - ✅ **Linter** — 自动 Markdown 格式化

@@ -862,13 +862,25 @@ download_plugin() {
       ok=false; break
     fi
   done
-  curl -fsSL --max-time 30 "$base_url/styles.css" -o "$plugin_dir/styles.css" 2>/dev/null || true
+
+  # styles.css is optional (many plugins ship none). Capture HTTP status so we
+  # can distinguish "plugin has no CSS" (404) from "network hiccup" (timeout/5xx).
+  local css_status
+  css_status=$(curl -sSL --max-time 30 -w '%{http_code}' \
+    -o "$plugin_dir/styles.css" "$base_url/styles.css" 2>/dev/null || echo "000")
+  if [[ "$css_status" != "200" ]]; then
+    rm -f "$plugin_dir/styles.css"
+  fi
 
   # Clear download indicator and show result
   printf "\r%50s\r" ""  # Clear the line
 
   if $ok && [[ -s "$plugin_dir/manifest.json" ]]; then
     printf "    ${GREEN}✓${RESET} %s\n" "$plugin_id"
+    # Warn only when styles.css fetch failed due to network, not 404 (= plugin has no CSS)
+    if [[ "$css_status" != "200" && "$css_status" != "404" ]]; then
+      printf "      ${YELLOW}⚠${RESET} ${DIM}styles.css not downloaded (HTTP %s) — disable/enable plugin after re-running install${RESET}\n" "$css_status"
+    fi
     return 0
   else
     rm -rf "$plugin_dir"
@@ -891,6 +903,7 @@ install_obsidian_plugins() {
 
   # Core plugins (llm-wiki core functionality)
   local core_plugins=(
+    "YishenTu/claudian|claudian"                           # AI agent in vault (Claude Code/Codex/OpenCode)
     "blacksmithgu/obsidian-dataview|dataview"              # Query and display data from notes
     "SilentVoid13/Templater|templater-obsidian"            # Templates and automation
     "Vinzent03/obsidian-git|obsidian-git"                  # Git version control
