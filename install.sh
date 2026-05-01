@@ -177,11 +177,17 @@ detect_os() {
     elif command -v dnf     &>/dev/null; then PKG_MGR="dnf"
     elif command -v pacman  &>/dev/null; then PKG_MGR="pacman"
     fi
+    if [[ -z "$PKG_MGR" ]]; then
+      warn "No supported Linux package manager (apt/dnf/pacman) detected — tools will require manual install."
+    fi
   elif [[ "$OS" == "windows" ]]; then
     # Windows package managers: winget, chocolatey, scoop
     if   command -v winget    &>/dev/null; then PKG_MGR="winget"
     elif command -v choco     &>/dev/null; then PKG_MGR="choco"
     elif command -v scoop     &>/dev/null; then PKG_MGR="scoop"
+    fi
+    if [[ -z "$PKG_MGR" ]]; then
+      warn "No supported Windows package manager (winget/choco/scoop) detected — tools will require manual install. Get winget: https://aka.ms/getwinget"
     fi
   fi
 }
