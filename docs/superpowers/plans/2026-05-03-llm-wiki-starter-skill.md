@@ -631,6 +631,29 @@ If `<wiki>/.obsidian/appearance.json` does not exist, create it:
 ```
 
 If it exists, merge `cssTheme: Minimal` into it (do not overwrite unrelated keys).
+
+## Disable Safe Mode (critical — or plugins stay inert)
+
+Obsidian's Safe Mode is ON by default in a fresh vault. With Safe Mode on, `community-plugins.json` is recorded but no plugin actually runs — the user would have to go to Settings → Community plugins and toggle off Safe Mode manually.
+
+To enable plugins out-of-the-box, merge `"communityPluginsEnabled": true` into `<wiki>/.obsidian/app.json`:
+
+- If `app.json` does not exist: create with `{"communityPluginsEnabled": true}`.
+- If it exists: parse JSON, set `.communityPluginsEnabled = true`, write back. Do not clobber other keys (the template ships with `attachmentFolderPath`, `defaultViewMode`, etc. — preserve them).
+
+Example using `jq`:
+
+```bash
+app_json="$wiki_dir/.obsidian/app.json"
+if [[ -f "$app_json" ]]; then
+  tmp=$(mktemp)
+  jq '. + {communityPluginsEnabled: true}' "$app_json" > "$tmp" && mv "$tmp" "$app_json"
+else
+  echo '{"communityPluginsEnabled": true}' > "$app_json"
+fi
+```
+
+Without `jq`, use `python3 -c "..."` to do the same read-modify-write.
 ```
 
 - [ ] **Step 2: Commit**
@@ -642,7 +665,9 @@ git commit -m "feat(skill): add plugin + theme install reference
 Reads plugin-manifest.json; downloads main.js/manifest.json plus
 optional styles.css (HTTP status 200/404/other discrimination);
 initializes custom-sort data.json; installs Minimal theme; writes
-community-plugins.json and appearance.json."
+community-plugins.json and appearance.json; sets
+communityPluginsEnabled=true in app.json so installed plugins are
+live on first vault open (not stuck behind Safe Mode)."
 ```
 
 ---
@@ -1129,7 +1154,66 @@ with:
   local theme_url="https://github.com/$theme_repo/releases/latest/download"
 ```
 
-- [ ] **Step 7: Verify bash syntax and smoke-test**
+- [ ] **Step 7: Enable community plugins out of the box**
+
+Two sub-steps so vault-opening-first-time has plugins live (not blocked by Safe Mode):
+
+**7a. Add the field to the template's base `app.json`** so freshly created vaults carry it:
+
+```bash
+# Current template file:
+#   template/base/.obsidian/app.json
+```
+
+Add `"communityPluginsEnabled": true` as a new key (preserve existing keys). After edit, the file should look like:
+
+```json
+{
+  "interfaceFontSize": 14,
+  "attachmentFolderPath": "raw/assets",
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false,
+  "showFrontmatter": true,
+  "defaultViewMode": "preview",
+  "foldHeading": false,
+  "foldIndent": true,
+  "alwaysUpdateLinks": true,
+  "readableLineLength": false,
+  "showLineNumber": false,
+  "promptDelete": false,
+  "communityPluginsEnabled": true
+}
+```
+
+Verify with `jq . template/base/.obsidian/app.json` — should pretty-print without error.
+
+**7b. Also set the field on the target vault after plugin install** (for `--only-obsidian` mode, where the vault pre-existed and template base was not just copied). In `install_obsidian_plugins()`, after the `community-plugins.json` write block (currently around line 981), add:
+
+```bash
+  # Ensure Safe Mode is off so community plugins are actually live on first open.
+  local app_json="$wiki_dir/.obsidian/app.json"
+  if [[ -f "$app_json" ]]; then
+    if command -v jq &>/dev/null; then
+      local tmp
+      tmp=$(mktemp)
+      jq '. + {communityPluginsEnabled: true}' "$app_json" > "$tmp" && mv "$tmp" "$app_json"
+    else
+      python3 -c "
+import json, sys
+p = '$app_json'
+with open(p) as f:
+    d = json.load(f)
+d['communityPluginsEnabled'] = True
+with open(p, 'w') as f:
+    json.dump(d, f, indent=2)
+"
+    fi
+  else
+    echo '{"communityPluginsEnabled": true}' > "$app_json"
+  fi
+```
+
+- [ ] **Step 8: Verify bash syntax and smoke-test**
 
 Run:
 
@@ -1149,10 +1233,10 @@ read_plugin_manifest ux   | wc -l   # expect 8
 
 If mismatch, inspect manifest. Fix before commit.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add install.sh
+git add install.sh template/base/.obsidian/app.json
 git commit -m "refactor: read plugin manifest from shared JSON source
 
 Replaces hardcoded core_plugins / ux_plugins / theme values in
@@ -1162,7 +1246,12 @@ prevents two places drifting out of sync.
 
 Also flips Agent Skills detection order to prefer ~/.agents/
 (~/.claude/ comes second), both in detect_installed() and in the
-install_skills() post-install verification block."
+install_skills() post-install verification block.
+
+Adds communityPluginsEnabled=true to template/base/.obsidian/app.json
+and re-asserts it on the target vault after plugin install, so
+community plugins are live on first vault open (not inert behind
+Safe Mode)."
 ```
 
 ---
