@@ -229,17 +229,17 @@ detect_installed() {
     fi
   fi
 
-  # Claude Code Skills — check ~/.claude/skills/, ~/.agents/skills/, and plugins/marketplaces/
-  local skills_dir="$HOME/.claude/skills"
+  # Claude Code Skills — check ~/.agents/skills/ (preferred), ~/.claude/skills/, and plugins/marketplaces/
   local agents_dir="$HOME/.agents/skills"
+  local skills_dir="$HOME/.claude/skills"
   local plugins_dir="$HOME/.claude/plugins/marketplaces"
 
-  if [[ -d "$skills_dir/obsidian-markdown" || -d "$skills_dir/obsidian-cli" || \
-        -d "$agents_dir/obsidian-markdown" || -d "$agents_dir/obsidian-cli" ]]; then
+  if [[ -d "$agents_dir/obsidian-markdown" || -d "$agents_dir/obsidian-cli" || \
+        -d "$skills_dir/obsidian-markdown" || -d "$skills_dir/obsidian-cli" ]]; then
     HAS_OBSIDIAN_SKILLS=true
   fi
-  if [[ -d "$skills_dir/excalidraw-diagram" || -d "$skills_dir/obsidian-canvas-creator" || \
-        -d "$agents_dir/excalidraw-diagram" || -d "$agents_dir/obsidian-canvas-creator" || \
+  if [[ -d "$agents_dir/excalidraw-diagram" || -d "$agents_dir/obsidian-canvas-creator" || \
+        -d "$skills_dir/excalidraw-diagram" || -d "$skills_dir/obsidian-canvas-creator" || \
         -d "$plugins_dir/axton-obsidian-visual-skills/excalidraw-diagram" ]]; then
     HAS_VISUAL_SKILLS=true
   fi
@@ -659,9 +659,10 @@ install_skills() {
     info "Installing ${GREEN}kepano/obsidian-skills${RESET}..."
     if npx -y skills add kepano/obsidian-skills -g -y 2>&1 | tail -3; then
       # Re-check detection
-      if [[ -d "$HOME/.claude/skills/obsidian-markdown" ]] || \
-         [[ -d "$HOME/.claude/skills/obsidian-cli" ]] || \
-         [[ -d "$HOME/.agents/skills/obsidian-markdown" ]]; then
+      if [[ -d "$HOME/.agents/skills/obsidian-markdown" ]] || \
+         [[ -d "$HOME/.agents/skills/obsidian-cli" ]] || \
+         [[ -d "$HOME/.claude/skills/obsidian-markdown" ]] || \
+         [[ -d "$HOME/.claude/skills/obsidian-cli" ]]; then
         HAS_OBSIDIAN_SKILLS=true
         success "kepano/obsidian-skills installed"
       else
@@ -679,9 +680,11 @@ install_skills() {
     info "Installing ${GREEN}axtonliu/axton-obsidian-visual-skills${RESET}..."
     if npx -y skills add axtonliu/axton-obsidian-visual-skills -g -y 2>&1 | tail -3; then
       # Re-check detection
-      if [[ -d "$HOME/.claude/plugins/marketplaces/axton-obsidian-visual-skills" ]] || \
+      if [[ -d "$HOME/.agents/skills/excalidraw-diagram" ]] || \
+         [[ -d "$HOME/.agents/skills/obsidian-canvas-creator" ]] || \
          [[ -d "$HOME/.claude/skills/excalidraw-diagram" ]] || \
-         [[ -d "$HOME/.agents/skills/excalidraw-diagram" ]]; then
+         [[ -d "$HOME/.claude/skills/obsidian-canvas-creator" ]] || \
+         [[ -d "$HOME/.claude/plugins/marketplaces/axton-obsidian-visual-skills/excalidraw-diagram" ]]; then
         HAS_VISUAL_SKILLS=true
         success "axtonliu/visual-skills installed"
       else
@@ -895,6 +898,63 @@ download_plugin() {
   fi
 }
 
+# ─── Plugin manifest helpers ──────────────────────────────────────────────────
+# Resolves the manifest path. Echoes the path or returns nonzero.
+_locate_plugin_manifest() {
+  local script_dir
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)" || return 1
+
+  if [[ -f "$script_dir/skills/llm-wiki-starter/assets/plugin-manifest.json" ]]; then
+    echo "$script_dir/skills/llm-wiki-starter/assets/plugin-manifest.json"
+    return 0
+  fi
+  if [[ -n "${TEMPLATE_TMPDIR:-}" && -f "$TEMPLATE_TMPDIR/repo/skills/llm-wiki-starter/assets/plugin-manifest.json" ]]; then
+    echo "$TEMPLATE_TMPDIR/repo/skills/llm-wiki-starter/assets/plugin-manifest.json"
+    return 0
+  fi
+  if [[ -n "${LOCAL_TEMPLATE:-}" && -f "$(dirname "$LOCAL_TEMPLATE")/skills/llm-wiki-starter/assets/plugin-manifest.json" ]]; then
+    echo "$(dirname "$LOCAL_TEMPLATE")/skills/llm-wiki-starter/assets/plugin-manifest.json"
+    return 0
+  fi
+  return 1
+}
+
+# Reads plugin entries. Args: group = "core" | "ux". Echoes one "repo|id" per line.
+read_plugin_manifest() {
+  local group="$1"
+  local manifest
+  manifest="$(_locate_plugin_manifest)" || fail "plugin-manifest.json not found — expected at skills/llm-wiki-starter/assets/"
+
+  if command -v jq &>/dev/null; then
+    jq -r --arg g "$group" '.[$g][] | "\(.repo)|\(.id)"' "$manifest"
+  else
+    python3 - "$manifest" "$group" <<'PY'
+import json, sys
+with open(sys.argv[1]) as f:
+    d = json.load(f)
+for p in d[sys.argv[2]]:
+    print(p['repo'] + '|' + p['id'])
+PY
+  fi
+}
+
+# Reads theme entry. Echoes "repo|id".
+read_theme_manifest() {
+  local manifest
+  manifest="$(_locate_plugin_manifest)" || fail "plugin-manifest.json not found"
+
+  if command -v jq &>/dev/null; then
+    jq -r '.theme | "\(.repo)|\(.id)"' "$manifest"
+  else
+    python3 - "$manifest" <<'PY'
+import json, sys
+with open(sys.argv[1]) as f:
+    d = json.load(f)
+print(d['theme']['repo'] + '|' + d['theme']['id'])
+PY
+  fi
+}
+
 install_obsidian_plugins() {
   local wiki_dir="$1"
   local plugins_installed=()
@@ -907,30 +967,21 @@ install_obsidian_plugins() {
   # UX plugins:   Enhance Obsidian editing experience (toolbar, search, navigation, diagrams)
   # ────────────────────────────────────────────────────────────────────────────
 
-  # Core plugins (llm-wiki core functionality)
-  local core_plugins=(
-    "YishenTu/claudian|claudian"                           # AI agent in vault (Claude Code/Codex/OpenCode)
-    "blacksmithgu/obsidian-dataview|dataview"              # Query and display data from notes
-    "SilentVoid13/Templater|templater-obsidian"            # Templates and automation
-    "Vinzent03/obsidian-git|obsidian-git"                  # Git version control
-    "platers/obsidian-linter|obsidian-linter"              # Markdown linting
-    "pjeby/tag-wrangler|tag-wrangler"                      # Tag management
-    "TfTHacker/obsidian42-strange-new-worlds|obsidian42-strange-new-worlds"  # Link context
-    "mirnovov/obsidian-homepage|homepage"                  # Dashboard/homepage
-    "SebastianMC/obsidian-custom-sort|custom-sort"         # Custom file sorting
-  )
+  # Plugin lists: read from shared manifest at skills/llm-wiki-starter/assets/plugin-manifest.json
+  # (single source of truth shared with the llm-wiki-starter Skill).
+  local core_plugins=()
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && core_plugins+=("$line")
+  done < <(read_plugin_manifest core)
 
-  # UX plugins (Obsidian editing experience enhancements)
-  local ux_plugins=(
-    "scambier/obsidian-omnisearch|omnisearch"              # Fuzzy search across vault
-    "darlal/obsidian-switcher-plus|darlal-switcher-plus"   # Quick switcher with headings
-    "kepano/obsidian-minimal-settings|obsidian-minimal-settings"  # Minimal theme settings
-    "kepano/obsidian-hider|obsidian-hider"                 # Hide UI elements (cleaner interface)
-    "PKM-er/obsidian-editing-toolbar|editing-toolbar"      # MS Word-like editing toolbar + F11 fullscreen
-    "zsviczian/obsidian-excalidraw-plugin|obsidian-excalidraw-plugin"  # Hand-drawn style diagrams
-    "guopenghui/obsidian-quiet-outline|obsidian-quiet-outline"  # Enhanced outline view
-    "yonatan-reicher/obsidian-open-in-terminal|open-in-terminal"  # Open vault in terminal
-  )
+  local ux_plugins=()
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && ux_plugins+=("$line")
+  done < <(read_plugin_manifest ux)
+
+  if [[ ${#core_plugins[@]} -eq 0 || ${#ux_plugins[@]} -eq 0 ]]; then
+    fail "Plugin manifest empty or unreadable at skills/llm-wiki-starter/assets/plugin-manifest.json"
+  fi
 
   # Skip obsidian-git if Git is not available
   if ! $HAS_GIT; then
@@ -982,6 +1033,28 @@ install_obsidian_plugins() {
     printf "\n  ${GREEN}✓${RESET} ${BOLD}%d${RESET} plugins configured\n" "${#plugins_installed[@]}"
   fi
 
+  # Disable Safe Mode so installed plugins are live on first vault open.
+  local app_json="$wiki_dir/.obsidian/app.json"
+  if [[ -f "$app_json" ]]; then
+    if command -v jq &>/dev/null; then
+      local tmp
+      tmp=$(mktemp)
+      jq '. + {communityPluginsEnabled: true}' "$app_json" > "$tmp" && mv "$tmp" "$app_json" || rm -f "$tmp"
+    else
+      python3 - "$app_json" <<'PY'
+import json, sys
+p = sys.argv[1]
+with open(p) as f:
+    d = json.load(f)
+d['communityPluginsEnabled'] = True
+with open(p, 'w') as f:
+    json.dump(d, f, indent=2)
+PY
+    fi
+  else
+    echo '{"communityPluginsEnabled": true}' > "$app_json"
+  fi
+
   # Configure custom-sort plugin (must not be suspended)
   local cs_dir="$wiki_dir/.obsidian/plugins/custom-sort"
   if [[ -d "$cs_dir" && ! -f "$cs_dir/data.json" ]]; then
@@ -992,8 +1065,12 @@ CSJSON
 
   # Install Minimal theme
   printf "\n  ${DIM}Theme:${RESET}\n"
-  local theme_dir="$wiki_dir/.obsidian/themes/Minimal"
-  local theme_url="https://github.com/kepano/obsidian-minimal/releases/latest/download"
+  local theme_entry
+  theme_entry=$(read_theme_manifest)
+  local theme_repo="${theme_entry%%|*}"
+  local theme_id="${theme_entry##*|}"
+  local theme_dir="$wiki_dir/.obsidian/themes/$theme_id"
+  local theme_url="https://github.com/$theme_repo/releases/latest/download"
   if [[ ! -d "$theme_dir" ]]; then
     mkdir -p "$theme_dir"
     printf "  ${CYAN}↓${RESET} ${DIM}Downloading Minimal theme...${RESET}"
