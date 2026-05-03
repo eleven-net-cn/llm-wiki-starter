@@ -24,14 +24,13 @@ npx -y skills add eleven-net-cn/llm-wiki-starter -g -y
 
 然后在你的 AI CLI 里说 **"创建 llm-wiki 知识库"**（English: "create llm wiki"），或直接运行 `/llm-wiki-starter`。
 
-> **提示**：如果自然语言没有自动触发 Skill（某些 AI CLI 不做语义匹配；或本机其他"wiki/知识库"类 skill 抢词），改用显式的 `/llm-wiki-starter` 命令——它总能触发。措辞中包含 "**llm-wiki**" 或 "**本地** 知识库" 也有助于区别于飞书 wiki / 在线 wiki。
-
-Agent 会自动检测已装工具、一步步引导你完成搭建 —— 不受操作系统和包管理器的限制。
+Agent 会自动检测已装工具，并引导你完成搭建 —— 不受操作系统和包管理器的限制。
 
 **Skill 命令参数**（全部可选；`/llm-wiki-starter` 不带参数即进入交互式。命名与 `install.sh` 对齐）：
 
 | 参数 | 默认值 | 行为 |
 |------|--------|------|
+| `--bash` | 关闭 | **熟手快捷模式**：跳过 AI 6 阶段流程，直接 `curl \| bash` 调 install.sh，并转发其它参数。极大节省 token，结果一致。 |
 | `--name <wiki-name>` | （交互式提示） | Wiki 目录名 |
 | `--lang <en\|zh>` | `en` | 模板语言版本 |
 | `--dir <path>` | `$(pwd)` | 父目录；vault 创建在 `<dir>/<name>` |
@@ -44,13 +43,28 @@ Agent 会自动检测已装工具、一步步引导你完成搭建 —— 不受
 示例：
 
 ```
-/llm-wiki-starter
-/llm-wiki-starter --name research-wiki --lang zh
-/llm-wiki-starter --name new-wiki --dir ~/Documents/CODE
-/llm-wiki-starter --only-tools
-/llm-wiki-starter --only-wiki --name fresh-wiki --lang en
-/llm-wiki-starter --only-obsidian --dir ~/Documents/CODE/my-wiki
+/llm-wiki-starter                                                    # 交互式，走完整 SOP
+/llm-wiki-starter --bash --name research-wiki --lang zh              # 快速、非交互、不走 AI 引导
+/llm-wiki-starter --name research-wiki --lang zh                     # 交互式，AI 引导
+/llm-wiki-starter --only-tools                                       # 仅安装工具
+/llm-wiki-starter --only-wiki --name fresh-wiki --lang en            # 工具已就绪，仅创建 wiki
+/llm-wiki-starter --only-obsidian --dir ~/Documents/CODE/my-wiki     # 仅给已有 vault 安装插件
 ```
+
+#### Skill 使用技巧
+
+- **触发可靠性**：`/llm-wiki-starter` 总能触发。自然语言（"创建 llm-wiki 知识库"、"create llm wiki"）也能触发，但**最好包含 "llm-wiki" 或 "本地"** 这种区分词，避免被本机其他同类 skill（lark-wiki、wiki-ingest 等）抢词。如果自然语言没有触发，改用显式 slash 命令。
+- **裸命令探索参数**：`/llm-wiki-starter` 不带参数会先打印一行所有可用参数提示，再进入交互式 —— 这就是 inline help。
+- **每次创建都是新知识库**：用同名重跑会被要求改名；工具 / skills / Obsidian / 插件的检测是幂等的，已装的会自动跳过。
+- **按你想做什么选模式**：
+  - 全新机器第一次 → 裸 `/llm-wiki-starter`（或 `--bash` 走非交互式）
+  - 工具齐全，只想加新 wiki → `--only-wiki --name <新名字>`
+  - 给已有 vault 重装插件（如 Obsidian 重置后）→ `--only-obsidian --dir <已有 vault>`
+- **`--bash` 模式前置**：需要 `curl`、`bash` shell、能访问 GitHub。Windows 用户必须在 Git Bash 或 WSL2 里跑（cmd.exe / PowerShell 无法 pipe 到 bash）。
+- **更新 Skill**：再跑一次 `npx -y skills add eleven-net-cn/llm-wiki-starter -g -y` 会重新 clone 并覆盖本地 `~/.agents/skills/llm-wiki-starter/`（以及 `~/.claude/skills/` 的软链）。
+- **国内用户走代理**：`npx skills add` 内部用 `git clone`，`--bash` 模式用 `curl`。**两套都要配**：`git config --global http.proxy http://127.0.0.1:<端口>` **加上** shell `export https_proxy=http://127.0.0.1:<端口>`。只配其中一个，另一个工具仍连不上 GitHub。
+- **跨 AI CLI**：同一份 Skill 文件被软链到 `~/.agents/skills/` 和 `~/.claude/skills/`，所以 Claude Code、Codex、Gemini CLI、Cursor、Copilot CLI、OpenCode 都能识别，无需多次安装。
+- **Canvas 约束已嵌入新 vault**：生成的 `AGENTS.md` 已告知未来的 AI 会话用 `obsidian-canvas-creator`（来自 `axtonliu/visual-skills`）创建 `.canvas` 文件 —— 你不需要每次重复说明。
 
 ### 方式 B — 一键 bash 脚本
 

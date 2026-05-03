@@ -57,27 +57,43 @@ Detection rules shared across stages: see `references/01-detect-tools.md`.
 ## Stage 0: Entry alignment
 
 1. Run `uname -s` to detect OS. Record as `OS` = macos / linux / windows.
-2. **Parameter hint** (only when triggered by bare `/llm-wiki-starter` with NO parameters): print ONE concise line listing available flags before anything else, so the user discovers them:
+2. **Parameter hint** (only when triggered by bare `/llm-wiki-starter` with NO parameters): print ONE concise line listing available flags before anything else, so the user discovers them. List `--bash` first since power users invoke it most often:
 
    ```
-   Parameters (optional): --name <wiki-name>  --lang <en|zh>  --dir <path>  --only-tools  --only-wiki  --only-obsidian
+   Parameters (optional): --bash  --name <wiki-name>  --lang <en|zh>  --dir <path>  --only-tools  --only-wiki  --only-obsidian
    No params given — continuing interactively.
    ```
 
    Skip this hint if: (a) the user passed any parameter, OR (b) triggered via natural language (not the slash command).
 
-3. Parse any CLI parameters passed with `/llm-wiki-starter`. Remember them for later stages. If an unknown flag appears, print ONE line: `Unknown parameter: <flag>. Valid: --name, --lang, --dir, --only-tools, --only-wiki, --only-obsidian. Ignoring.` and continue. The three `--only-*` flags are mutually exclusive — if more than one is passed, keep the last and warn `Conflicting --only-* flags; using <last>`.
+3. Parse any CLI parameters passed with `/llm-wiki-starter`. Remember them for later stages. If an unknown flag appears, print ONE line: `Unknown parameter: <flag>. Valid: --bash, --name, --lang, --dir, --only-tools, --only-wiki, --only-obsidian. Ignoring.` and continue. The three `--only-*` flags are mutually exclusive — if more than one is passed, keep the last and warn `Conflicting --only-* flags; using <last>`.
 
-4. Unless the user invoked `/llm-wiki-starter` (explicit command = confirmed intent), ask: "Proceed?" Accept yes/proceed/继续/ok as confirmation. Do NOT pre-announce the upcoming stages — global principle #8.
+4. **If `--bash` was passed: short-circuit to bash mode.** Do NOT read any other reference files, do NOT run the 6-stage SOP. Instead, run a single bash command that pipes the upstream `install.sh` into bash, forwarding the other parameters:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh \
+     | bash -s -- --yes <forwarded params>
+   ```
+
+   Forward only parameters install.sh understands: `--name`, `--lang`, `--dir`, `--only-tools`, `--only-wiki`, `--only-obsidian`. Always append `--yes` so install.sh runs non-interactively.
+
+   Example: `/llm-wiki-starter --bash --name foo --lang zh` → runs `curl ... | bash -s -- --yes --name foo --lang zh`.
+
+   After install.sh exits, relay its exit status (success / failure) in ONE line. Do NOT layer a Skill-style summary on top — install.sh prints its own summary already.
+
+   See `references/09-bash-mode.md` for rationale and edge cases.
+
+5. Unless the user invoked `/llm-wiki-starter` (explicit command = confirmed intent), ask: "Proceed?" Accept yes/proceed/继续/ok as confirmation. Do NOT pre-announce the upcoming stages — global principle #8.
 
 **Reminder**: even if the user has run this Skill before and has an existing wiki on disk, the goal of this run is to create a NEW wiki. Stage 4 will prompt for a fresh name/dir. Do not interpret a prior wiki as "the work is already done."
 
 ## Parameter reference
 
-Names mirror `install.sh` so the two install paths stay aligned.
+Names mirror `install.sh` so the two install paths stay aligned. Listed in suggested-display order (most commonly used first).
 
 | Flag | Default | Behavior |
 |---|---|---|
+| `--bash` | (off) | **Bypass the 6-stage SOP**. Execute upstream `install.sh` in one shell call (non-interactive, `--yes`) and forward the other flags. Minimizes AI token cost. The AI reads only SKILL.md + `references/09-bash-mode.md`, no other reference files. |
 | `--name <wiki-name>` | (prompt) | Wiki directory name. Collision → re-prompt. |
 | `--lang <en\|zh>` | `en` (or prompt) | Language overlay for template. |
 | `--dir <path>` | `$(pwd)` (or prompt) | Parent directory; wiki created at `<dir>/<name>`. |
