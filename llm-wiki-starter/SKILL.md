@@ -22,7 +22,7 @@ If explicit command is used with parameters, skip the matching interactive promp
 2. **Failures do not block.** On single-item failure, record it to a "manual install" list and continue. Print the full list at the end.
 3. **Respect OS and shell.** Detect with `uname -s` (macOS / Linux / Windows-via-Git-Bash). If running under native Windows cmd/PowerShell (no `uname`), use winget/choco/scoop directly — do not assume bash.
 4. **Use the host CLI's native interaction.** If you are Claude Code, use AskUserQuestion. If Codex or another CLI, use its native prompt mechanism. Do not hardcode a UI shape.
-5. **Idempotent and re-runnable.** A second run from any point must skip completed items without breaking anything.
+5. **Idempotent for tools, NOT for wiki creation.** Re-running detects already-installed tools and skips them. But Stage 4 (create wiki) is the workflow's purpose: every invocation MUST prompt for a new wiki name / lang / dir and produce a NEW vault. The existence of a previously-created wiki (e.g. `~/Documents/CODE/my-wiki`) is NOT grounds to skip Stage 4 — ask the user for a new name and create a fresh vault next to it.
 6. **Never prompt for login / API keys / tokens / extra AI CLIs.** The user is already running an AI CLI — leave their AI tooling alone.
 7. **Windows line endings.** When writing files the user will commit, use LF (Unix) line endings.
 
@@ -45,9 +45,11 @@ Detection rules shared across stages: see `references/01-detect-tools.md`.
 ## Stage 0: Entry alignment
 
 1. Run `uname -s` to detect OS. Record as `OS` = macos / linux / windows.
-2. Announce the plan in one sentence: "I'll detect what's installed, install missing tools, create your wiki, and configure Obsidian."
+2. Announce the plan in one sentence: "I'll detect what's installed, install missing tools, ask you to name a new wiki, then create and configure it."
 3. Unless the user invoked `/llm-wiki-starter` (explicit command = confirmed intent), ask: "Proceed?" Accept yes/proceed/继续/ok as confirmation.
 4. Parse any CLI parameters passed with `/llm-wiki-starter`. Remember them for later stages.
+
+**Reminder**: even if the user has run this Skill before and has an existing wiki on disk, the goal of this run is to create a NEW wiki. Stage 4 will prompt for a fresh name/dir. Do not interpret a prior wiki as "the work is already done."
 
 Then proceed to stage 1.
 
