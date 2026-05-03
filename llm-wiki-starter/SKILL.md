@@ -1,6 +1,15 @@
 ---
 name: llm-wiki-starter
-description: Scaffold an LLM Wiki knowledge base (Andrej Karpathy pattern) — detect and install base tools, Obsidian + 17 plugins + Minimal theme + shortcuts, Agent Skills, check for browser Web Clipper, and create the vault from the official template. Use when user says 创建 llm-wiki 知识库, 创建知识库, create llm wiki, scaffold llm wiki, set up knowledge base with Obsidian, or invokes /llm-wiki-starter.
+description: |
+  TRIGGER PHRASES — match ANY of these (case-insensitive):
+  · 创建 llm-wiki 知识库 / 创建知识库 / 创建 wiki / 创建 wiki 知识库 / 创建本地知识库
+  · 搭建 llm-wiki / 搭建 wiki / 搭建知识库 / 搭建本地知识库 / 搭一个 wiki / 起一个 wiki / 弄一个知识库 / 来一个 wiki / 装一个 wiki
+  · create llm wiki / scaffold llm wiki / set up llm wiki / build a local wiki / scaffold a knowledge base / set up obsidian wiki / start a new wiki vault
+  · /llm-wiki-starter (slash command)
+
+  Scaffolds a NEW LOCAL Obsidian-based LLM Wiki on the user's machine, following Andrej Karpathy's pattern. End-to-end: installs Node/Git/jq, kepano/obsidian-skills, axtonliu/visual-skills, Obsidian app, 17 plugins + Minimal theme; creates a fresh vault from the official template; initializes git. Each invocation produces a NEW vault — re-runs prompt for a fresh name.
+
+  DO NOT match for: 飞书/Lark wiki (lark-wiki handles that), online/hosted wikis (Notion, Confluence, GitHub wiki), ingesting content INTO an existing wiki (wiki-ingest), or generic Obsidian-vault editing (obsidian-markdown / obsidian-cli).
 ---
 
 # llm-wiki-starter
@@ -48,10 +57,30 @@ Detection rules shared across stages: see `references/01-detect-tools.md`.
 ## Stage 0: Entry alignment
 
 1. Run `uname -s` to detect OS. Record as `OS` = macos / linux / windows.
-2. Unless the user invoked `/llm-wiki-starter` (explicit command = confirmed intent), ask: "Proceed?" Accept yes/proceed/继续/ok as confirmation. Do NOT pre-announce the upcoming stages — global principle #8.
-3. Parse any CLI parameters passed with `/llm-wiki-starter`. Remember them for later stages.
+2. **Parameter hint** (only when triggered by bare `/llm-wiki-starter` with NO parameters): print ONE concise line listing available flags before anything else, so the user discovers them:
+
+   ```
+   Parameters (optional): --name <wiki-name>  --lang <en|zh>  --dir <path>  --skip-tools  --only-obsidian
+   No params given — continuing interactively.
+   ```
+
+   Skip this hint if: (a) the user passed any parameter, OR (b) triggered via natural language (not the slash command).
+
+3. Parse any CLI parameters passed with `/llm-wiki-starter`. Remember them for later stages. If an unknown flag appears, print ONE line: `Unknown parameter: <flag>. Valid: --name, --lang, --dir, --skip-tools, --only-obsidian. Ignoring.` and continue.
+
+4. Unless the user invoked `/llm-wiki-starter` (explicit command = confirmed intent), ask: "Proceed?" Accept yes/proceed/继续/ok as confirmation. Do NOT pre-announce the upcoming stages — global principle #8.
 
 **Reminder**: even if the user has run this Skill before and has an existing wiki on disk, the goal of this run is to create a NEW wiki. Stage 4 will prompt for a fresh name/dir. Do not interpret a prior wiki as "the work is already done."
+
+## Parameter reference
+
+| Flag | Default | Behavior |
+|---|---|---|
+| `--name <wiki-name>` | (prompt) | Wiki directory name. Collision → re-prompt. |
+| `--lang <en\|zh>` | `en` (or prompt) | Language overlay for template. |
+| `--dir <path>` | `$(pwd)` (or prompt) | Parent directory; wiki created at `<dir>/<name>`. |
+| `--skip-tools` | (off) | Skip Stages 1-3 (base tools / Agent Skills / Obsidian). Only create the wiki + configure plugins. |
+| `--only-obsidian` | (off) | Skip Stages 1-4. Only install plugins + theme into an existing vault at `--dir`. Requires `--dir` pointing at a vault containing `CLAUDE.md`. |
 
 Then proceed to stage 1.
 

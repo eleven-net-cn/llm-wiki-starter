@@ -24,7 +24,28 @@ npx -y skills add eleven-net-cn/llm-wiki-starter -g -y
 
 Then in your AI CLI say **"create llm wiki"** (中文："创建 llm-wiki 知识库"), or run `/llm-wiki-starter`.
 
+> **Tip**: if natural-language phrasing doesn't auto-load the Skill (some AI CLIs don't do semantic skill matching, or other "wiki/知识库" skills may compete for the same phrase), use the explicit `/llm-wiki-starter` slash command — it always works. Phrases that match best: include the word "**llm-wiki**" or "**本地** wiki" to disambiguate from 飞书 wiki / online wiki.
+
 The Agent will detect what's already installed, ask you to pick which AI CLIs you want, and guide you through the full setup — with the freedom to adapt to any OS or package manager.
+
+**Skill command parameters** (all optional; bare `/llm-wiki-starter` runs interactively):
+
+| Flag | Default | Behavior |
+|------|---------|----------|
+| `--name <wiki-name>` | (interactive prompt) | Wiki directory name |
+| `--lang <en\|zh>` | `en` | Template language overlay |
+| `--dir <path>` | `$(pwd)` | Parent directory; vault created at `<dir>/<name>` |
+| `--skip-tools` | off | Skip base-tool / Agent-Skills / Obsidian-app installs; only create wiki + configure plugins |
+| `--only-obsidian` | off | Skip everything except plugins/theme; requires `--dir` pointing at an existing wiki |
+
+Examples:
+
+```
+/llm-wiki-starter
+/llm-wiki-starter --name research-wiki --lang zh
+/llm-wiki-starter --name new-wiki --dir ~/Documents/CODE
+/llm-wiki-starter --only-obsidian --dir ~/Documents/CODE/my-wiki
+```
 
 ### Option B — One-shot bash script
 
