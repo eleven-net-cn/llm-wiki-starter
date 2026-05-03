@@ -58,6 +58,6 @@ Do NOT print this constraint to the user during Stage 2 or in the Stage 6 summar
 If either `npx` install fails (network, registry):
 
 - Record to manual-install list:
-  - `kepano/obsidian-skills: npx -y skills add kepano/obsidian-skills -g -y`
-  - `axtonliu/visual-skills: npx -y skills add axtonliu/axton-obsidian-visual-skills -g -y`
+  - `kepano/obsidian-skills: npx skills add kepano/obsidian-skills -g`
+  - `axtonliu/visual-skills: npx skills add axtonliu/axton-obsidian-visual-skills -g`
 - Continue to Stage 3; skills are not critical-path for creating the wiki.

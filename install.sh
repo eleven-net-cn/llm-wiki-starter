@@ -671,7 +671,7 @@ install_skills() {
     else
       warn "Failed to install kepano/obsidian-skills"
       print_manual_install "obsidian-skills" "https://github.com/kepano/obsidian-skills" \
-        "Run manually: npx -y skills add kepano/obsidian-skills -g -y"
+        "Run manually: npx skills add kepano/obsidian-skills -g"
     fi
   fi
 
@@ -693,7 +693,7 @@ install_skills() {
     else
       warn "Failed to install axtonliu/axton-obsidian-visual-skills"
       print_manual_install "axton-obsidian-visual-skills" "https://github.com/axtonliu/axton-obsidian-visual-skills" \
-        "Run manually: npx -y skills add axtonliu/axton-obsidian-visual-skills -g -y"
+        "Run manually: npx skills add axtonliu/axton-obsidian-visual-skills -g"
     fi
   fi
 }

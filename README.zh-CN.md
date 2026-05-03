@@ -41,7 +41,7 @@ curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main
 1. 安装 Skill
 
     ```bash
-    npx -y skills add eleven-net-cn/llm-wiki-starter -g -y
+    npx skills add eleven-net-cn/llm-wiki-starter -g
     ```
 
 2. 在 Agent 中对话：
