@@ -12,6 +12,22 @@ Compatible with Claude Code, Codex, Copilot, Gemini CLI, OpenCode, and other mai
 
 ## Installation
 
+Pick one of two paths:
+
+### Option A — Skill-based (recommended for AI Agent users)
+
+Install the Skill once, then any AI CLI (Claude Code / Codex / Copilot CLI / Gemini CLI / OpenCode) can scaffold the wiki for you:
+
+```bash
+npx -y skills add eleven-net-cn/llm-wiki-starter -g -y
+```
+
+Then in your AI CLI say **"create llm wiki"** (中文："创建 llm-wiki 知识库"), or run `/llm-wiki-starter`.
+
+The Agent will detect what's already installed, ask you to pick which AI CLIs you want, and guide you through the full setup — with the freedom to adapt to any OS or package manager.
+
+### Option B — One-shot bash script
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash
 ```

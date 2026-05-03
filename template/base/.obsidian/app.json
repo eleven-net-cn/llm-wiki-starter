@@ -10,5 +10,6 @@
   "alwaysUpdateLinks": true,
   "readableLineLength": false,
   "showLineNumber": false,
-  "promptDelete": false
+  "promptDelete": false,
+  "communityPluginsEnabled": true
 }

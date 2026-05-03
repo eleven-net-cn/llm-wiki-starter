@@ -1,0 +1,24 @@
+{
+  "core": [
+    {"repo": "YishenTu/claudian", "id": "claudian", "desc": "AI agent in vault (Claude Code/Codex/OpenCode)"},
+    {"repo": "blacksmithgu/obsidian-dataview", "id": "dataview", "desc": "Query and display data from notes"},
+    {"repo": "SilentVoid13/Templater", "id": "templater-obsidian", "desc": "Templates and automation"},
+    {"repo": "Vinzent03/obsidian-git", "id": "obsidian-git", "desc": "Git version control", "requires": "git"},
+    {"repo": "platers/obsidian-linter", "id": "obsidian-linter", "desc": "Markdown linting"},
+    {"repo": "pjeby/tag-wrangler", "id": "tag-wrangler", "desc": "Tag management"},
+    {"repo": "TfTHacker/obsidian42-strange-new-worlds", "id": "obsidian42-strange-new-worlds", "desc": "Link context"},
+    {"repo": "mirnovov/obsidian-homepage", "id": "homepage", "desc": "Dashboard/homepage"},
+    {"repo": "SebastianMC/obsidian-custom-sort", "id": "custom-sort", "desc": "Custom file sorting"}
+  ],
+  "ux": [
+    {"repo": "scambier/obsidian-omnisearch", "id": "omnisearch", "desc": "Fuzzy search across vault"},
+    {"repo": "darlal/obsidian-switcher-plus", "id": "darlal-switcher-plus", "desc": "Quick switcher with headings"},
+    {"repo": "kepano/obsidian-minimal-settings", "id": "obsidian-minimal-settings", "desc": "Minimal theme settings"},
+    {"repo": "kepano/obsidian-hider", "id": "obsidian-hider", "desc": "Hide UI elements"},
+    {"repo": "PKM-er/obsidian-editing-toolbar", "id": "editing-toolbar", "desc": "Word-like toolbar + F11 fullscreen"},
+    {"repo": "zsviczian/obsidian-excalidraw-plugin", "id": "obsidian-excalidraw-plugin", "desc": "Hand-drawn diagrams"},
+    {"repo": "guopenghui/obsidian-quiet-outline", "id": "obsidian-quiet-outline", "desc": "Enhanced outline"},
+    {"repo": "yonatan-reicher/obsidian-open-in-terminal", "id": "open-in-terminal", "desc": "Open vault in terminal"}
+  ],
+  "theme": {"repo": "kepano/obsidian-minimal", "id": "Minimal"}
+}
