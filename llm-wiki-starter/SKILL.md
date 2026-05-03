@@ -3,7 +3,7 @@ name: llm-wiki-starter
 description: |
   TRIGGER PHRASES — match ANY of these (case-insensitive):
   · 创建 llm-wiki 知识库 / 创建知识库 / 创建 wiki / 创建 wiki 知识库 / 创建本地知识库
-  · 搭建 llm-wiki / 搭建 wiki / 搭建知识库 / 搭建本地知识库 / 搭一个 wiki / 起一个 wiki / 弄一个知识库 / 来一个 wiki / 装一个 wiki
+  · 搭建 llm-wiki / 搭建 wiki / 搭建知识库 / 搭建本地知识库 / 搭一个 wiki
   · create llm wiki / scaffold llm wiki / set up llm wiki / build a local wiki / scaffold a knowledge base / set up obsidian wiki / start a new wiki vault
   · /llm-wiki-starter (slash command)
 

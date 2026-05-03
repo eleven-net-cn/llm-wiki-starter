@@ -12,61 +12,7 @@ Compatible with Claude Code, Codex, Copilot, Gemini CLI, OpenCode, and other mai
 
 ## Installation
 
-Pick one of two paths:
-
-### Option A — Skill-based (recommended for AI Agent users)
-
-Install the Skill once, then any AI CLI (Claude Code / Codex / Copilot CLI / Gemini CLI / OpenCode) can scaffold the wiki for you:
-
-```bash
-npx -y skills add eleven-net-cn/llm-wiki-starter -g -y
-```
-
-Then in your AI CLI say **"create llm wiki"** (中文："创建 llm-wiki 知识库"), or run `/llm-wiki-starter`.
-
-The Agent will detect what's already installed and guide you through the rest.
-
-**Skill command parameters** (all optional; bare `/llm-wiki-starter` runs interactively. Names mirror `install.sh`.):
-
-| Flag | Default | Behavior |
-|------|---------|----------|
-| `--bash` | off | **Power-user shortcut.** Bypass the AI 6-stage SOP — pipe `install.sh` directly via `curl \| bash`, forwarding the other flags. Massive token savings, same end result. |
-| `--name <wiki-name>` | (interactive prompt) | Wiki directory name |
-| `--lang <en\|zh>` | `en` | Template language overlay |
-| `--dir <path>` | `$(pwd)` | Parent directory; vault created at `<dir>/<name>` |
-| `--only-tools` | off | Install tools / skills / Obsidian only — no wiki created |
-| `--only-wiki` | off | Skip tool installs; create the wiki + configure plugins (assumes tools already present) |
-| `--only-obsidian` | off | Skip tools and wiki creation; install plugins + theme into an existing vault at `--dir` |
-
-The three `--only-*` flags are mutually exclusive.
-
-Examples:
-
-```
-/llm-wiki-starter                                                    # interactive, full SOP
-/llm-wiki-starter --bash --name research-wiki --lang zh              # fast, non-interactive, no AI walkthrough
-/llm-wiki-starter --name research-wiki --lang zh                     # interactive, AI-guided
-/llm-wiki-starter --only-tools                                       # just install tools
-/llm-wiki-starter --only-wiki --name fresh-wiki --lang en            # tools assumed present, just scaffold a wiki
-/llm-wiki-starter --only-obsidian --dir ~/Documents/CODE/my-wiki     # configure plugins on an existing vault
-```
-
-#### Skill usage tips
-
-- **Trigger reliability**: `/llm-wiki-starter` always works. Natural language ("create llm wiki", "创建 llm-wiki 知识库") also triggers, but include the word **"llm-wiki"** or **"本地"** to disambiguate from competing skills (lark-wiki, wiki-ingest, etc.). If it doesn't load via natural language, fall back to the explicit slash command.
-- **Bare command discovery**: bare `/llm-wiki-starter` (no params) prints a single-line hint of all available flags before starting interactive prompts — that's your inline help.
-- **Each invocation creates a NEW wiki**: re-running with the same name will be re-prompted; tools / skills / Obsidian / plugins detection is idempotent and skips already-installed items.
-- **Pick the mode that matches what changed**:
-  - First time on a fresh machine → bare `/llm-wiki-starter` (or `--bash` if you want non-interactive)
-  - Already have tools, just want a new wiki → `--only-wiki --name <new-wiki>`
-  - Re-install plugins/theme on an existing vault (e.g. after Obsidian Safe Mode reset) → `--only-obsidian --dir <existing-vault>`
-- **`--bash` mode requirements**: needs `curl`, `bash` shell, network access to GitHub. Windows users must run from Git Bash or WSL2 (cmd.exe / PowerShell can't pipe to bash).
-- **Update the Skill**: re-running `npx -y skills add eleven-net-cn/llm-wiki-starter -g -y` re-clones and overwrites the local copy at `~/.agents/skills/llm-wiki-starter/` (and the `~/.claude/skills/` symlink).
-- **Behind GFW**: install via `npx skills add` uses `git clone`, and `--bash` mode uses `curl`. Configure both: `git config --global http.proxy http://127.0.0.1:<port>` AND shell `export https_proxy=http://127.0.0.1:<port>`. Setting only one of them will leave the other tool unable to reach GitHub.
-- **Cross-CLI**: the same Skill file is symlinked under `~/.agents/skills/` and `~/.claude/skills/`, so Claude Code, Codex, Gemini CLI, Cursor, Copilot CLI, and OpenCode all see it without re-installing.
-- **Canvas guidance lives in the new vault**: the generated `AGENTS.md` tells future AI sessions to use `obsidian-canvas-creator` (from `axtonliu/visual-skills`) for `.canvas` creation — you don't need to repeat that yourself.
-
-### Option B — One-shot bash script
+### Option A — bash script
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash
@@ -75,7 +21,7 @@ curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main
 
 > **Windows users**: Run the installer from **Git Bash** (recommended) or **WSL2** — `cmd.exe` and PowerShell cannot execute bash scripts. Install [Git for Windows](https://git-scm.com/download/win) (provides Git Bash + curl), then run `git config --global core.autocrlf input` to avoid `bad interpreter` errors. The installer auto-detects winget / Chocolatey / Scoop to fetch Obsidian, Node.js and Git.
 
-**With options:**
+With options:
 
 ```bash
 # Only detect and install global tools (Claude Code, Obsidian, NodeJS, Agent Skills, etc.)
@@ -87,6 +33,45 @@ curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main
 # Skip tools and wiki creation, only configure Obsidian (plugins, theme, shortcuts) in current vault
 curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash -s -- --only-obsidian
 ```
+
+### Option B — Skill install (for AI Agent users, or when bash has environment issues)
+
+> This produces the same result as `install.sh`. Agent-guided creation consumes tokens — recommended only when the bash script can't run in your environment.
+
+1. Install the Skill
+
+    ```bash
+    npx -y skills add eleven-net-cn/llm-wiki-starter -g -y
+    ```
+
+2. Trigger by chatting in your AI Agent:
+
+    ```bash
+    "create llm wiki"
+
+    # or
+
+    "scaffold an llm wiki"
+
+    # or similar...
+    ```
+
+    The Agent will auto-detect installed tools and guide you through the setup.
+
+3. Or, use the slash command in your Agent:
+
+    ```bash
+    /llm-wiki-starter
+    ```
+
+    The slash command supports all parameters, e.g.:
+
+    ```bash
+    # Only create wiki + Obsidian config, skip tool install
+    /llm-wiki-starter --only-wiki
+
+    # /llm-wiki-starter --bash    # Pipe through bash script — saves tokens
+    ```
 
 ### Options
 
@@ -101,10 +86,11 @@ Supported options (use as needed):
 | `--only-tools` | Install tools only, without creating wiki | - |
 | `--only-wiki` | Create wiki and Obsidian config only, without installing tools | - |
 | `--only-obsidian` | Configure Obsidian in existing vault only | - |
+| `--bash` | Used via `/llm-wiki-starter --bash` (gives Agent users a more flexible, token-saving path) | - |
 
 ### What Gets Installed
 
-Detects what's already on your system and only installs what's missing:
+Detects what's already on your system and only installs what's missing.
 
 **Tools & Skills**
 
