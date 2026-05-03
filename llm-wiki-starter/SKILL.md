@@ -25,6 +25,9 @@ If explicit command is used with parameters, skip the matching interactive promp
 5. **Idempotent for tools, NOT for wiki creation.** Re-running detects already-installed tools and skips them. But Stage 4 (create wiki) is the workflow's purpose: every invocation MUST prompt for a new wiki name / lang / dir and produce a NEW vault. The existence of a previously-created wiki (e.g. `~/Documents/CODE/my-wiki`) is NOT grounds to skip Stage 4 — ask the user for a new name and create a fresh vault next to it.
 6. **Never prompt for login / API keys / tokens / extra AI CLIs.** The user is already running an AI CLI — leave their AI tooling alone.
 7. **Windows line endings.** When writing files the user will commit, use LF (Unix) line endings.
+8. **Act, don't narrate.** Don't pre-announce what you're about to do. Don't recap which Stage you're in. Don't say "需要确认 X" / "I'll now ask you about Y" / "进入 Stage N" / "稍后会提醒"; just take the action — ask the question, run the command, write the file. The user only needs ONE concise line per outcome (`✓ <name>`, `⚠ <name>: <reason>`), not a play-by-play.
+9. **Report each item individually, not in aggregate.** "✓ kepano/obsidian-skills installed" + "✓ axtonliu/visual-skills installed" — not "Both Agent Skills are installed". Lists of items get one line each.
+10. **Each warning appears ONCE.** Don't pre-warn at detection time and then re-warn at finalize. If something needs the user's attention, surface it in the final summary only — not midway through the run.
 
 ## Workflow (6 stages)
 
@@ -45,18 +48,13 @@ Detection rules shared across stages: see `references/01-detect-tools.md`.
 ## Stage 0: Entry alignment
 
 1. Run `uname -s` to detect OS. Record as `OS` = macos / linux / windows.
-2. Announce the plan in one sentence: "I'll detect what's installed, install missing tools, ask you to name a new wiki, then create and configure it."
-3. Unless the user invoked `/llm-wiki-starter` (explicit command = confirmed intent), ask: "Proceed?" Accept yes/proceed/继续/ok as confirmation.
-4. Parse any CLI parameters passed with `/llm-wiki-starter`. Remember them for later stages.
+2. Unless the user invoked `/llm-wiki-starter` (explicit command = confirmed intent), ask: "Proceed?" Accept yes/proceed/继续/ok as confirmation. Do NOT pre-announce the upcoming stages — global principle #8.
+3. Parse any CLI parameters passed with `/llm-wiki-starter`. Remember them for later stages.
 
 **Reminder**: even if the user has run this Skill before and has an existing wiki on disk, the goal of this run is to create a NEW wiki. Stage 4 will prompt for a fresh name/dir. Do not interpret a prior wiki as "the work is already done."
 
 Then proceed to stage 1.
 
-## Canvas operations constraint (important)
+## Canvas constraint (already encoded in template)
 
-After Stage 2 installs kepano/obsidian-skills, **5 skills arrive in the bundle, one of which is `json-canvas`**. For this workflow and all Canvas operations in the resulting wiki:
-
-> Use `obsidian-canvas-creator` (from axtonliu/visual-skills) for all Canvas creation and editing. Do NOT use `json-canvas`.
-
-Include this constraint in the final summary (Stage 6) so the user and future AI sessions see it.
+The template's `AGENTS.md` instructs future AI sessions inside the new vault to use `obsidian-canvas-creator` (axtonliu/visual-skills) for `.canvas` creation, not `json-canvas` (which kepano/obsidian-skills bundles). You don't need to repeat this in the user-facing finalize summary — that line is for AI coordination, and AGENTS.md already carries it into the vault.

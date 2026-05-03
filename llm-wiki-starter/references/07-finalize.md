@@ -16,24 +16,25 @@ If Git is missing, skip this block; the wiki is still usable.
 
 ## Summary output
 
-Print a structured summary to stdout. Scale to the user's actual install results.
+Print ONE structured summary, then stop. Scale to actual install results — only show non-empty sections.
+
+Item rule: each tool / skill / plugin gets ONE line by name. No aggregate phrases like "Both Agent Skills installed". No internal AI-coordination notes (e.g. json-canvas constraint — that lives in the vault's `AGENTS.md`, not the user-facing summary).
 
 ```
 ✓ Wiki created: <WIKI_DIR> (lang: <LANG>)
 
 Installed this run:
-  ✓ Node.js (<version>)
-  ✓ Obsidian
+  ✓ <tool name and version, one per line>
   ✓ kepano/obsidian-skills
-    ⚠ Canvas operations must use obsidian-canvas-creator (not json-canvas)
   ✓ axtonliu/visual-skills
   ✓ 17 Obsidian plugins + Minimal theme
 
 Skipped (already installed):
-  - Git (<version>)
+  - <tool name and version, one per line>
 
 Manual install required:
   ⚠ Web Clipper: https://obsidian.md/clip (install in your browser)
+  ⚠ <other manual items only if they actually failed>
 
 Quick start:
   1. cd <WIKI_DIR>
@@ -47,8 +48,8 @@ Quick start:
        "run a wiki lint"
 ```
 
-Replace bracketed placeholders with actual values.
+Drop entire sections when empty (no "Manual install required:" header if Web Clipper was detected and nothing else failed).
 
 ## Re-triggering
 
-Tell the user: "You can re-run this workflow anytime with `/llm-wiki-starter` — I'll skip everything already installed."
+Tell the user once, in one sentence: "Run `/llm-wiki-starter` again to create another wiki — already-installed tools will be skipped, but you'll be prompted for a fresh wiki name."

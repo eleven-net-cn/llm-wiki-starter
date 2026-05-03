@@ -16,14 +16,7 @@ On install failure, record to manual list: `Obsidian: https://obsidian.md/downlo
 
 ## Web Clipper (browser extension)
 
-**Cannot be installed via CLI** — browser extensions require user approval in-browser. Strategy:
+**Cannot be installed via CLI** — browser extensions require user approval in-browser.
 
-1. Detect (per `references/01-detect-tools.md`). If any browser's extension folder contains the Obsidian Web Clipper ID, print ✓ and skip.
-2. If not detected, print:
-
-```
-⚠ Web Clipper (browser extension) — install manually:
-    https://obsidian.md/clip
-```
-
-3. Do not prompt the user to install it right now; continue to Stage 4. Stage 6 summary will remind them.
+1. Detect (per `references/01-detect-tools.md`). If any browser's extension folder contains the Obsidian Web Clipper ID, mark `WEB_CLIPPER_INSTALLED=true` for the finalize summary and move on silently.
+2. If not detected, mark `WEB_CLIPPER_INSTALLED=false` for finalize. **Do not print anything to the user during this stage** — the summary in Stage 6 will surface it once. (Global principle #10.)

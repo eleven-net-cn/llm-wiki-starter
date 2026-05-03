@@ -2,6 +2,8 @@
 
 Two packages to install. Both use the vercel-labs/skills CLI via `npx` (no global skills CLI install needed).
 
+**Output rule**: report each package on its own line by name (`✓ kepano/obsidian-skills` / `✓ axtonliu/visual-skills`). Do not combine them into a single "Both Agent Skills are installed" line — global principle #9.
+
 ## kepano/obsidian-skills
 
 **Install:**
@@ -43,13 +45,13 @@ for d in \
 done
 ```
 
-## Canvas operations constraint (MUST tell the user)
+## Canvas operations constraint (encoded in template, not surfaced to user here)
 
 `kepano/obsidian-skills` bundles 5 skills: `defuddle`, `json-canvas`, `obsidian-bases`, `obsidian-cli`, `obsidian-markdown`.
 
-**json-canvas is installed but should not be used.** All Canvas creation and editing must use `obsidian-canvas-creator` (from axtonliu/visual-skills).
+`json-canvas` is installed but the vault's `AGENTS.md` (Stage 4 template) instructs all `.canvas` creation to go through `obsidian-canvas-creator` (from axtonliu/visual-skills). Do not delete the `json-canvas` directory — `skills update` may pull it back; the constraint lives in `AGENTS.md` instead.
 
-Do not delete the `json-canvas` directory — `skills update` may pull it back. Instead, the Stage 6 summary and the generated wiki's CLAUDE.md / AGENTS.md (already present in the template) should note this constraint.
+Do NOT print this constraint to the user during Stage 2 or in the Stage 6 summary — it's AI-coordination internal to the resulting vault, not user-facing information (global principle #10).
 
 ## Failure handling
 
