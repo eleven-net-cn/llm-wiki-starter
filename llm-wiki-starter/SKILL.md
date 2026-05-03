@@ -81,7 +81,7 @@ Detection rules shared across stages: see `references/01-detect-tools.md`.
 
    After install.sh exits, relay its exit status (success / failure) in ONE line. Do NOT layer a Skill-style summary on top — install.sh prints its own summary already.
 
-5. Unless the user invoked `/llm-wiki-starter` (explicit command = confirmed intent), ask: "Proceed?" Accept yes/proceed/继续/ok as confirmation. Do NOT pre-announce the upcoming stages — global principle #8.
+5. Go directly to Stage 1. Do NOT ask "Proceed?" or any other confirmation — the user's request to create a wiki IS the confirmation. Global principle #8 (Act, don't narrate) applies to trigger paths too.
 
 **Reminder**: even if the user has run this Skill before and has an existing wiki on disk, the goal of this run is to create a NEW wiki. Stage 4 will prompt for a fresh name/dir. Do not interpret a prior wiki as "the work is already done."
 
