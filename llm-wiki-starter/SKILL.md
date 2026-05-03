@@ -21,7 +21,7 @@ The user is already running an AI CLI to invoke this Skill — do NOT prompt the
 ## When to use
 
 - Natural language: user says 创建 llm-wiki 知识库, 创建知识库, create llm wiki, scaffold llm wiki, set up knowledge base.
-- Explicit command: `/llm-wiki-starter` (optionally with `--name <wiki-name>`, `--lang <en|zh>`, `--dir <path>`, `--skip-tools`, `--only-obsidian`).
+- Explicit command: `/llm-wiki-starter` (optionally with `--bash`, `--name <wiki-name>`, `--lang <en|zh>`, `--dir <path>`, `--only-tools`, `--only-wiki`, `--only-obsidian`). See **Parameter reference** below for full semantics.
 
 If explicit command is used with parameters, skip the matching interactive prompts.
 
@@ -81,8 +81,6 @@ Detection rules shared across stages: see `references/01-detect-tools.md`.
 
    After install.sh exits, relay its exit status (success / failure) in ONE line. Do NOT layer a Skill-style summary on top — install.sh prints its own summary already.
 
-   See `references/09-bash-mode.md` for rationale and edge cases.
-
 5. Unless the user invoked `/llm-wiki-starter` (explicit command = confirmed intent), ask: "Proceed?" Accept yes/proceed/继续/ok as confirmation. Do NOT pre-announce the upcoming stages — global principle #8.
 
 **Reminder**: even if the user has run this Skill before and has an existing wiki on disk, the goal of this run is to create a NEW wiki. Stage 4 will prompt for a fresh name/dir. Do not interpret a prior wiki as "the work is already done."
@@ -93,7 +91,7 @@ Names mirror `install.sh` so the two install paths stay aligned. Listed in sugge
 
 | Flag | Default | Behavior |
 |---|---|---|
-| `--bash` | (off) | **Bypass the 6-stage SOP**. Execute upstream `install.sh` in one shell call (non-interactive, `--yes`) and forward the other flags. Minimizes AI token cost. The AI reads only SKILL.md + `references/09-bash-mode.md`, no other reference files. |
+| `--bash` | (off) | **Bypass the 6-stage SOP**. Execute upstream `install.sh` in one shell call (non-interactive, `--yes`) and forward the other flags. Minimizes AI token cost. The AI reads only SKILL.md Stage 0 step 4, no other reference files. |
 | `--name <wiki-name>` | (prompt) | Wiki directory name. Collision → re-prompt. |
 | `--lang <en\|zh>` | `en` (or prompt) | Language overlay for template. |
 | `--dir <path>` | `$(pwd)` (or prompt) | Parent directory; wiki created at `<dir>/<name>`. |
