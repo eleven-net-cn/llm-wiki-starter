@@ -50,6 +50,4 @@ Quick start:
 
 Drop entire sections when empty (no "Manual install required:" header if Web Clipper was detected and nothing else failed).
 
-## Re-triggering
-
-Tell the user once, in one sentence: "Run `/llm-wiki-starter` again to create another wiki — already-installed tools will be skipped, but you'll be prompted for a fresh wiki name."
+Stop after the summary. Do NOT append re-triggering tips, "you can run me again" hints, or any forward-looking narration — global principle #8. The summary is the end.
