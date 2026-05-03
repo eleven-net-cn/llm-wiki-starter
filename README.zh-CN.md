@@ -12,6 +12,22 @@
 
 ## 安装
 
+任选一种方式：
+
+### 方式 A — Skill 安装（推荐，面向 AI Agent 用户）
+
+一条命令装好本 Skill，任何 AI CLI（Claude Code / Codex / Copilot CLI / Gemini CLI / OpenCode）都能帮你搭建知识库：
+
+```bash
+npx -y skills add eleven-net-cn/llm-wiki-starter -g -y
+```
+
+然后在你的 AI CLI 里说 **"创建 llm-wiki 知识库"**（English: "create llm wiki"），或直接运行 `/llm-wiki-starter`。
+
+Agent 会自动检测已装工具、问你选哪些 AI CLI、一步步引导你完成搭建 —— 不受操作系统和包管理器的限制。
+
+### 方式 B — 一键 bash 脚本
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/eleven-net-cn/llm-wiki-starter/main/install.sh | bash
 ```
