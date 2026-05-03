@@ -6,7 +6,7 @@ Report progress per tool. On failure, record to manual-install list and continue
 
 ## curl
 
-Required for tarball download in Stage 5. Almost always pre-installed.
+Required for tarball download in Stage 4. Almost always pre-installed.
 
 - macOS / Linux: pre-installed; if truly missing, `brew install curl` / `apt-get install -y curl` / `dnf install -y curl` / `pacman -S --noconfirm curl`.
 - Windows 10+: pre-installed as `curl.exe`. If missing, `winget install curl.curl`.
@@ -51,7 +51,7 @@ Used by `install.sh` to parse plugin-manifest.json. The Skill itself does not ne
 | Linux (pacman) | `sudo pacman -S --noconfirm git` |
 | Windows | `winget install Git.Git --accept-source-agreements --accept-package-agreements` |
 
-If Git install fails, Stage 7 will skip `git init` but the wiki is still usable.
+If Git install fails, Stage 6 will skip `git init` but the wiki is still usable.
 
 ## Homebrew (macOS only)
 

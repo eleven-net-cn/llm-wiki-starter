@@ -1,4 +1,4 @@
-# Stage 5: Create wiki from template
+# Stage 4: Create wiki from template
 
 ## Gather inputs
 
@@ -11,7 +11,7 @@ Using host CLI native prompts (skip any already provided via `/llm-wiki-starter`
 Validate:
 
 - If `<parent>/<name>` exists:
-  - If it contains `CLAUDE.md`: treat as existing wiki, skip creation and proceed to Stage 6 (configure Obsidian in place).
+  - If it contains `CLAUDE.md`: treat as existing wiki, skip creation and proceed to Stage 5 (configure Obsidian in place).
   - Otherwise: ask user for a different name.
 
 ## Download template tarball
@@ -96,10 +96,10 @@ foreach ($f in $files) {
 
 ## Verify
 
-After Stage 5:
+After Stage 4:
 
 - `$WIKI_DIR/CLAUDE.md` exists and contains `$NAME` (not `<Wiki Name>`)
 - `$WIKI_DIR/.gitignore` exists (from base layer)
 - `$WIKI_DIR/raw/` and `$WIKI_DIR/wiki/` directories populated
 
-Proceed to Stage 6.
+Proceed to Stage 5.

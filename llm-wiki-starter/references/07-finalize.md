@@ -1,4 +1,4 @@
-# Stage 7: Finalize
+# Stage 6: Finalize
 
 ## Git initialization
 
@@ -22,7 +22,6 @@ Print a structured summary to stdout. Scale to the user's actual install results
 ✓ Wiki created: <WIKI_DIR> (lang: <LANG>)
 
 Installed this run:
-  ✓ Claude Code (<version>)
   ✓ Node.js (<version>)
   ✓ Obsidian
   ✓ kepano/obsidian-skills
@@ -35,7 +34,6 @@ Skipped (already installed):
 
 Manual install required:
   ⚠ Web Clipper: https://obsidian.md/clip (install in your browser)
-  ⚠ Codex CLI: npm install -g @openai/codex (network failed)
 
 Quick start:
   1. cd <WIKI_DIR>
@@ -43,15 +41,13 @@ Quick start:
        macOS:   open -a Obsidian .
        Linux:   obsidian .
        Windows: start obsidian .
-  3. Start your AI agent:
-       claude                 (Claude Code)
-       codex                  (Codex CLI)
-       gh copilot             (Copilot CLI)
-       gemini                 (Gemini CLI)
-       opencode               (OpenCode)
+  3. Start chatting with your AI agent in this directory and try:
+       "ingest this article: <url>"
+       "what's the relationship between X and Y?"
+       "run a wiki lint"
 ```
 
-Replace bracketed placeholders with actual values. Include only the AI CLIs the user installed.
+Replace bracketed placeholders with actual values.
 
 ## Re-triggering
 

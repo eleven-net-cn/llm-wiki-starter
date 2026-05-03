@@ -1,4 +1,4 @@
-# Stage 4: Install Obsidian app + Web Clipper
+# Stage 3: Install Obsidian app + Web Clipper
 
 ## Obsidian app
 
@@ -26,4 +26,4 @@ On install failure, record to manual list: `Obsidian: https://obsidian.md/downlo
     https://obsidian.md/clip
 ```
 
-3. Do not prompt the user to install it right now; continue to Stage 5. Stage 7 summary will remind them.
+3. Do not prompt the user to install it right now; continue to Stage 4. Stage 6 summary will remind them.

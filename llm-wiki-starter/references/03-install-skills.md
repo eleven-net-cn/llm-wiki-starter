@@ -1,4 +1,4 @@
-# Stage 3: Install Agent Skills
+# Stage 2: Install Agent Skills
 
 Two packages to install. Both use the vercel-labs/skills CLI via `npx` (no global skills CLI install needed).
 
@@ -49,7 +49,7 @@ done
 
 **json-canvas is installed but should not be used.** All Canvas creation and editing must use `obsidian-canvas-creator` (from axtonliu/visual-skills).
 
-Do not delete the `json-canvas` directory — `skills update` may pull it back. Instead, the Stage 7 summary and the generated wiki's CLAUDE.md / AGENTS.md (already present in the template) should note this constraint.
+Do not delete the `json-canvas` directory — `skills update` may pull it back. Instead, the Stage 6 summary and the generated wiki's CLAUDE.md / AGENTS.md (already present in the template) should note this constraint.
 
 ## Failure handling
 
@@ -58,4 +58,4 @@ If either `npx` install fails (network, registry):
 - Record to manual-install list:
   - `kepano/obsidian-skills: npx -y skills add kepano/obsidian-skills -g -y`
   - `axtonliu/visual-skills: npx -y skills add axtonliu/axton-obsidian-visual-skills -g -y`
-- Continue to Stage 4; skills are not critical-path for creating the wiki.
+- Continue to Stage 3; skills are not critical-path for creating the wiki.

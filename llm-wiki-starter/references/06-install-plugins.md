@@ -1,4 +1,4 @@
-# Stage 6: Install Obsidian plugins + Minimal theme
+# Stage 5: Install Obsidian plugins + Minimal theme
 
 Read `skills/llm-wiki-starter/assets/plugin-manifest.json`. It defines:
 
