@@ -904,16 +904,16 @@ _locate_plugin_manifest() {
   local script_dir
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)" || return 1
 
-  if [[ -f "$script_dir/skills/llm-wiki-starter/assets/plugin-manifest.json" ]]; then
-    echo "$script_dir/skills/llm-wiki-starter/assets/plugin-manifest.json"
+  if [[ -f "$script_dir/llm-wiki-starter/assets/plugin-manifest.json" ]]; then
+    echo "$script_dir/llm-wiki-starter/assets/plugin-manifest.json"
     return 0
   fi
-  if [[ -n "${TEMPLATE_TMPDIR:-}" && -f "$TEMPLATE_TMPDIR/repo/skills/llm-wiki-starter/assets/plugin-manifest.json" ]]; then
-    echo "$TEMPLATE_TMPDIR/repo/skills/llm-wiki-starter/assets/plugin-manifest.json"
+  if [[ -n "${TEMPLATE_TMPDIR:-}" && -f "$TEMPLATE_TMPDIR/repo/llm-wiki-starter/assets/plugin-manifest.json" ]]; then
+    echo "$TEMPLATE_TMPDIR/repo/llm-wiki-starter/assets/plugin-manifest.json"
     return 0
   fi
-  if [[ -n "${LOCAL_TEMPLATE:-}" && -f "$(dirname "$LOCAL_TEMPLATE")/skills/llm-wiki-starter/assets/plugin-manifest.json" ]]; then
-    echo "$(dirname "$LOCAL_TEMPLATE")/skills/llm-wiki-starter/assets/plugin-manifest.json"
+  if [[ -n "${LOCAL_TEMPLATE:-}" && -f "$(dirname "$LOCAL_TEMPLATE")/llm-wiki-starter/assets/plugin-manifest.json" ]]; then
+    echo "$(dirname "$LOCAL_TEMPLATE")/llm-wiki-starter/assets/plugin-manifest.json"
     return 0
   fi
   return 1
@@ -923,7 +923,7 @@ _locate_plugin_manifest() {
 read_plugin_manifest() {
   local group="$1"
   local manifest
-  manifest="$(_locate_plugin_manifest)" || fail "plugin-manifest.json not found — expected at skills/llm-wiki-starter/assets/"
+  manifest="$(_locate_plugin_manifest)" || fail "plugin-manifest.json not found — expected at llm-wiki-starter/assets/"
 
   if command -v jq &>/dev/null; then
     jq -r --arg g "$group" '.[$g][] | "\(.repo)|\(.id)"' "$manifest"
@@ -967,7 +967,7 @@ install_obsidian_plugins() {
   # UX plugins:   Enhance Obsidian editing experience (toolbar, search, navigation, diagrams)
   # ────────────────────────────────────────────────────────────────────────────
 
-  # Plugin lists: read from shared manifest at skills/llm-wiki-starter/assets/plugin-manifest.json
+  # Plugin lists: read from shared manifest at llm-wiki-starter/assets/plugin-manifest.json
   # (single source of truth shared with the llm-wiki-starter Skill).
   local core_plugins=()
   while IFS= read -r line; do
@@ -980,7 +980,7 @@ install_obsidian_plugins() {
   done < <(read_plugin_manifest ux)
 
   if [[ ${#core_plugins[@]} -eq 0 || ${#ux_plugins[@]} -eq 0 ]]; then
-    fail "Plugin manifest empty or unreadable at skills/llm-wiki-starter/assets/plugin-manifest.json"
+    fail "Plugin manifest empty or unreadable at llm-wiki-starter/assets/plugin-manifest.json"
   fi
 
   # Skip obsidian-git if Git is not available
