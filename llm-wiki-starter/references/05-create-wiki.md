@@ -1,18 +1,26 @@
 # Stage 4: Create wiki from template
 
+**This stage is the workflow's purpose.** Every invocation creates a NEW wiki. Do NOT silently skip this stage just because some previously-created wiki already exists on disk — always prompt the user for the new wiki's name / lang / dir.
+
+The only exception is the `--only-obsidian` flag, which means "configure Obsidian plugins/theme in an existing vault" — Stage 4 is skipped entirely and Stage 5 runs against `--dir`.
+
 ## Gather inputs
 
-Using host CLI native prompts (skip any already provided via `/llm-wiki-starter` parameters):
+Using host CLI native prompts. Skip any prompt whose value was already supplied via `/llm-wiki-starter` parameters (`--name`, `--lang`, `--dir`).
 
-1. **Wiki name** (default `my-wiki`) — used for directory name and placeholder replacement.
+1. **Wiki name** — used for directory name and placeholder replacement. Suggest a default that does NOT collide with an existing directory under the chosen parent (e.g. if `~/Documents/CODE/my-wiki` exists, suggest `my-wiki-2` or `<topic>-wiki`).
 2. **Language** (`en` | `zh`, default `en`) — picks template overlay.
 3. **Parent directory** (default `$(pwd)`) — wiki will be created at `<parent>/<name>`.
 
-Validate:
+## Validate target
 
-- If `<parent>/<name>` exists:
-  - If it contains `CLAUDE.md`: treat as existing wiki, skip creation and proceed to Stage 5 (configure Obsidian in place).
-  - Otherwise: ask user for a different name.
+Compute `target = <parent>/<name>`. Check for collisions:
+
+- **`target` does not exist** → proceed to download template (this is the happy path).
+- **`target` exists and contains `CLAUDE.md`** → it is already an llm-wiki vault. Tell the user: "目录 `<target>` 已经是一个 wiki，请输入一个不同的名字" / "Directory `<target>` is already a wiki — please enter a different name", then re-prompt for `name` (and/or `parent`). Do NOT silently reuse the existing wiki and do NOT proceed to Stage 5 against it.
+- **`target` exists but is not a wiki** (no `CLAUDE.md`) → tell the user the directory exists, ask for a different name or parent.
+
+Loop the prompt + validation until the target is a fresh path. Only then proceed to download.
 
 ## Download template tarball
 

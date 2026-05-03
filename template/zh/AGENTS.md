@@ -159,7 +159,7 @@ media: article | paper | video     # 可选，仅 source 类型页面
    - 包含**数据流**（输入→处理→输出）
    - 包含**层次结构**或分类（能力栈、分类树）
 
-   方案选择：架构/流程/数据流 → **Excalidraw**（存 `wiki/assets/excalidraw/`）；关系地图 → **JSON Canvas**（存 `canvas/`）；简单序列/状态 → **Mermaid**（内联）。
+   方案选择：架构/流程/数据流 → **Excalidraw**（存 `wiki/assets/excalidraw/`）；关系地图 → **Obsidian Canvas** 通过 `obsidian-canvas-creator` skill（存 `canvas/`）；简单序列/状态 → **Mermaid**（内联）。
 
    嵌入：`![[图表名.excalidraw]]` 或 Mermaid 代码块。**禁止**用 ASCII 字符画代替。
 
@@ -228,10 +228,12 @@ Wiki 页面中的图表**不使用 ASCII 字符画**，按以下优先级选择�
 | 优先级 | 方案 | 适用场景 | 存放位置 |
 |:---:|------|----------|----------|
 | 1 | **Excalidraw** | 流程图、架构图、数据流、复杂逻辑 | `wiki/assets/excalidraw/` |
-| 2 | **JSON Canvas** | 知识关系地图、空间布局 | `canvas/` |
-| 3 | **Mermaid** | 序列图、状态图、文档内简单图表 | wiki 页面内联 |
+| 2 | **Obsidian Canvas**（通过 `obsidian-canvas-creator` skill） | 知识关系地图、空间布局 | `canvas/` |
+| 3 | **Mermaid** | 序列图、状态图、文档内联简单图 | wiki 页面内联 |
 
 简单线性流程和对比表格保留文本。
+
+**Canvas 创建规范**：所有 `.canvas` 文件一律通过 `obsidian-canvas-creator` skill（来自 `axtonliu/visual-skills`）生成，**不要使用** `kepano/obsidian-skills` 包内的 `json-canvas` skill（虽已安装但禁用）—— `obsidian-canvas-creator` 提供 MindMap 放射式布局、自动连线、内容感知节点尺寸、颜色编码等针对 LLM Wiki 优化的能力。
 
 **Excalidraw 规范：**
 - 存放 `wiki/assets/excalidraw/`，命名 `<主题> <图类型>.excalidraw.md`

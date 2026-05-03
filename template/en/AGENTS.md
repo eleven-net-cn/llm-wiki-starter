@@ -161,7 +161,7 @@ Files are moved out of `raw/inbox/` after processing (no copies kept). Check thi
    - Contains **data flow** (input → processing → output)
    - Contains **hierarchy** or classification (capability stacks, category trees)
 
-   Diagram tool selection: architecture/flow/data-flow → **Excalidraw** (stored in `wiki/assets/excalidraw/`); relationship maps → **JSON Canvas** (stored in `canvas/`); simple sequence/state → **Mermaid** (inline).
+   Diagram tool selection: architecture/flow/data-flow → **Excalidraw** (stored in `wiki/assets/excalidraw/`); relationship maps → **Obsidian Canvas** via `obsidian-canvas-creator` skill (stored in `canvas/`); simple sequence/state → **Mermaid** (inline).
 
    Embed with: `![[diagram-name.excalidraw]]` or Mermaid code block. **Never** use ASCII art.
 
@@ -230,10 +230,12 @@ Wiki pages use diagrams instead of ASCII art, in this priority order:
 | Priority | Tool | Use Case | Storage |
 |:---:|------|----------|---------|
 | 1 | **Excalidraw** | Flowcharts, architecture, data flow, complex logic | `wiki/assets/excalidraw/` |
-| 2 | **JSON Canvas** | Knowledge relationship maps, spatial layout | `canvas/` |
+| 2 | **Obsidian Canvas** (via `obsidian-canvas-creator` skill) | Knowledge relationship maps, spatial layout | `canvas/` |
 | 3 | **Mermaid** | Sequence diagrams, state diagrams, simple inline charts | Inline in wiki pages |
 
 Simple linear flows and comparison tables can stay as text.
+
+**Canvas creation**: always go through the `obsidian-canvas-creator` skill (from `axtonliu/visual-skills`) for `.canvas` files. Do not use the `json-canvas` skill from `kepano/obsidian-skills` even though it is installed — `obsidian-canvas-creator` adds MindMap layout, auto-edges, content-aware sizing, and color coding tailored for LLM Wiki.
 
 **Excalidraw specs:**
 - Store in `wiki/assets/excalidraw/`, name as `<topic> <type>.excalidraw.md`
