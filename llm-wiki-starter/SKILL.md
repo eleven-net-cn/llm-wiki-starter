@@ -60,13 +60,13 @@ Detection rules shared across stages: see `references/01-detect-tools.md`.
 2. **Parameter hint** (only when triggered by bare `/llm-wiki-starter` with NO parameters): print ONE concise line listing available flags before anything else, so the user discovers them:
 
    ```
-   Parameters (optional): --name <wiki-name>  --lang <en|zh>  --dir <path>  --skip-tools  --only-obsidian
+   Parameters (optional): --name <wiki-name>  --lang <en|zh>  --dir <path>  --only-tools  --only-wiki  --only-obsidian
    No params given — continuing interactively.
    ```
 
    Skip this hint if: (a) the user passed any parameter, OR (b) triggered via natural language (not the slash command).
 
-3. Parse any CLI parameters passed with `/llm-wiki-starter`. Remember them for later stages. If an unknown flag appears, print ONE line: `Unknown parameter: <flag>. Valid: --name, --lang, --dir, --skip-tools, --only-obsidian. Ignoring.` and continue.
+3. Parse any CLI parameters passed with `/llm-wiki-starter`. Remember them for later stages. If an unknown flag appears, print ONE line: `Unknown parameter: <flag>. Valid: --name, --lang, --dir, --only-tools, --only-wiki, --only-obsidian. Ignoring.` and continue. The three `--only-*` flags are mutually exclusive — if more than one is passed, keep the last and warn `Conflicting --only-* flags; using <last>`.
 
 4. Unless the user invoked `/llm-wiki-starter` (explicit command = confirmed intent), ask: "Proceed?" Accept yes/proceed/继续/ok as confirmation. Do NOT pre-announce the upcoming stages — global principle #8.
 
@@ -74,15 +74,18 @@ Detection rules shared across stages: see `references/01-detect-tools.md`.
 
 ## Parameter reference
 
+Names mirror `install.sh` so the two install paths stay aligned.
+
 | Flag | Default | Behavior |
 |---|---|---|
 | `--name <wiki-name>` | (prompt) | Wiki directory name. Collision → re-prompt. |
 | `--lang <en\|zh>` | `en` (or prompt) | Language overlay for template. |
 | `--dir <path>` | `$(pwd)` (or prompt) | Parent directory; wiki created at `<dir>/<name>`. |
-| `--skip-tools` | (off) | Skip Stages 1-3 (base tools / Agent Skills / Obsidian). Only create the wiki + configure plugins. |
-| `--only-obsidian` | (off) | Skip Stages 1-4. Only install plugins + theme into an existing vault at `--dir`. Requires `--dir` pointing at a vault containing `CLAUDE.md`. |
+| `--only-tools` | (off) | Run Stages 1-3 only (base tools / Agent Skills / Obsidian app). Skip Stages 4-6 — no wiki created. |
+| `--only-wiki` | (off) | Skip Stages 1-3 (assumes tools already installed). Run Stage 4 (create wiki) + Stage 5 (plugins/theme) + Stage 6 (finalize). |
+| `--only-obsidian` | (off) | Skip Stages 1-4. Run Stage 5 only (install plugins + theme into an existing vault) + a brief Stage 6 summary. Requires `--dir` pointing at a vault containing `CLAUDE.md`. |
 
-Then proceed to stage 1.
+Then proceed to stage 1 (or skip ahead per the `--only-*` flag in effect).
 
 ## Canvas constraint (already encoded in template)
 

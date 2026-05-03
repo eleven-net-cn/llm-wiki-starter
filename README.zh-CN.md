@@ -28,15 +28,18 @@ npx -y skills add eleven-net-cn/llm-wiki-starter -g -y
 
 Agent 会自动检测已装工具、一步步引导你完成搭建 —— 不受操作系统和包管理器的限制。
 
-**Skill 命令参数**（全部可选；`/llm-wiki-starter` 不带参数即进入交互式）：
+**Skill 命令参数**（全部可选；`/llm-wiki-starter` 不带参数即进入交互式。命名与 `install.sh` 对齐）：
 
 | 参数 | 默认值 | 行为 |
 |------|--------|------|
 | `--name <wiki-name>` | （交互式提示） | Wiki 目录名 |
 | `--lang <en\|zh>` | `en` | 模板语言版本 |
 | `--dir <path>` | `$(pwd)` | 父目录；vault 创建在 `<dir>/<name>` |
-| `--skip-tools` | 关闭 | 跳过基础工具/Agent Skills/Obsidian 应用安装；仅创建 wiki + 配置插件 |
-| `--only-obsidian` | 关闭 | 仅安装插件/主题；需 `--dir` 指向已有 wiki |
+| `--only-tools` | 关闭 | 仅安装工具 / Skills / Obsidian，不创建 wiki |
+| `--only-wiki` | 关闭 | 跳过工具安装；创建 wiki + 配置插件（假设工具已就绪） |
+| `--only-obsidian` | 关闭 | 跳过工具与 wiki 创建；仅在 `--dir` 指向的已有 vault 中安装插件 + 主题 |
+
+三个 `--only-*` 参数互斥。
 
 示例：
 
@@ -44,6 +47,8 @@ Agent 会自动检测已装工具、一步步引导你完成搭建 —— 不受
 /llm-wiki-starter
 /llm-wiki-starter --name research-wiki --lang zh
 /llm-wiki-starter --name new-wiki --dir ~/Documents/CODE
+/llm-wiki-starter --only-tools
+/llm-wiki-starter --only-wiki --name fresh-wiki --lang en
 /llm-wiki-starter --only-obsidian --dir ~/Documents/CODE/my-wiki
 ```
 

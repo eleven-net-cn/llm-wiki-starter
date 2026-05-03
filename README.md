@@ -28,15 +28,18 @@ Then in your AI CLI say **"create llm wiki"** (中文："创建 llm-wiki 知识�
 
 The Agent will detect what's already installed, ask you to pick which AI CLIs you want, and guide you through the full setup — with the freedom to adapt to any OS or package manager.
 
-**Skill command parameters** (all optional; bare `/llm-wiki-starter` runs interactively):
+**Skill command parameters** (all optional; bare `/llm-wiki-starter` runs interactively. Names mirror `install.sh`.):
 
 | Flag | Default | Behavior |
 |------|---------|----------|
 | `--name <wiki-name>` | (interactive prompt) | Wiki directory name |
 | `--lang <en\|zh>` | `en` | Template language overlay |
 | `--dir <path>` | `$(pwd)` | Parent directory; vault created at `<dir>/<name>` |
-| `--skip-tools` | off | Skip base-tool / Agent-Skills / Obsidian-app installs; only create wiki + configure plugins |
-| `--only-obsidian` | off | Skip everything except plugins/theme; requires `--dir` pointing at an existing wiki |
+| `--only-tools` | off | Install tools / skills / Obsidian only — no wiki created |
+| `--only-wiki` | off | Skip tool installs; create the wiki + configure plugins (assumes tools already present) |
+| `--only-obsidian` | off | Skip tools and wiki creation; install plugins + theme into an existing vault at `--dir` |
+
+The three `--only-*` flags are mutually exclusive.
 
 Examples:
 
@@ -44,6 +47,8 @@ Examples:
 /llm-wiki-starter
 /llm-wiki-starter --name research-wiki --lang zh
 /llm-wiki-starter --name new-wiki --dir ~/Documents/CODE
+/llm-wiki-starter --only-tools
+/llm-wiki-starter --only-wiki --name fresh-wiki --lang en
 /llm-wiki-starter --only-obsidian --dir ~/Documents/CODE/my-wiki
 ```
 
