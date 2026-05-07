@@ -10,8 +10,6 @@ related_concepts: []
 confidence: medium
 ---
 
-# {{title}}
-
 > 一句话权威定义（≤50 字）
 
 ## 是什么

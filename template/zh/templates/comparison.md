@@ -8,8 +8,6 @@ sources: []
 confidence: medium
 ---
 
-# {{title}}
-
 > 一句话说明对比什么以及为什么对比。
 
 ## 概要

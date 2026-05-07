@@ -10,8 +10,6 @@ related_concepts: []
 confidence: medium
 ---
 
-# {{title}}
-
 > One-sentence authoritative definition (≤50 words)
 
 ## What It Is

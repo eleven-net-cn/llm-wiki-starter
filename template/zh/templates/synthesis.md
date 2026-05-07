@@ -8,8 +8,6 @@ sources: []
 confidence: medium
 ---
 
-# {{title}}
-
 > 一段话陈述本综合分析的核心论点。
 
 ## 关键论点

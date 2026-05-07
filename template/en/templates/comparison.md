@@ -8,8 +8,6 @@ sources: []
 confidence: medium
 ---
 
-# {{title}}
-
 > One sentence: what is being compared and why.
 
 ## Summary

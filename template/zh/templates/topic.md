@@ -9,8 +9,6 @@ sources: []
 confidence: medium
 ---
 
-# {{title}}
-
 > 对该主题的一段话概述。
 
 ## 背景与动机

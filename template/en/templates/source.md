@@ -10,8 +10,6 @@ source_url:
 media: 
 ---
 
-# {{title}}
-
 > One-paragraph summary of this source material.
 
 ## Key Takeaways

@@ -9,8 +9,6 @@ sources: []
 confidence: medium
 ---
 
-# {{title}}
-
 > One-paragraph overview of this topic.
 
 ## Background & Motivation

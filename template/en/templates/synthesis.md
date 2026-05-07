@@ -8,8 +8,6 @@ sources: []
 confidence: medium
 ---
 
-# {{title}}
-
 > One paragraph stating the core thesis of this synthesis.
 
 ## Key Arguments

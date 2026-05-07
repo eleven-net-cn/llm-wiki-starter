@@ -9,8 +9,6 @@ sources: []
 confidence: medium
 ---
 
-# {{title}}
-
 > Brief description of this entity (person, organization, product, or project).
 
 ## Overview

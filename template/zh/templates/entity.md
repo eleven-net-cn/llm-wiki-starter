@@ -9,8 +9,6 @@ sources: []
 confidence: medium
 ---
 
-# {{title}}
-
 > 对该实体（人物、组织、产品或项目）的简要描述。
 
 ## 概述
