@@ -1096,8 +1096,8 @@ CSJSON
   printf "    ${GREEN}•${RESET} ${BOLD}Cmd+Shift+F${RESET}    ${DIM}→ Omnisearch (fuzzy search)${RESET}\n"
   printf "    ${GREEN}•${RESET} ${BOLD}Cmd+R${RESET}          ${DIM}→ Quick switcher (headings)${RESET}\n"
   printf "    ${GREEN}•${RESET} ${BOLD}Cmd+←/→${RESET}        ${DIM}→ Navigate back/forward${RESET}\n"
-  printf "    ${GREEN}•${RESET} ${BOLD}Cmd+Shift+B${RESET}    ${DIM}→ Toggle left sidebar${RESET}\n"
-  printf "    ${GREEN}•${RESET} ${BOLD}Cmd+Shift+L${RESET}    ${DIM}→ Toggle right sidebar${RESET}\n"
+  printf "    ${GREEN}•${RESET} ${BOLD}Cmd+B${RESET}          ${DIM}→ Toggle left sidebar${RESET}\n"
+  printf "    ${GREEN}•${RESET} ${BOLD}Cmd+Option+B${RESET}   ${DIM}→ Toggle right sidebar${RESET}\n"
   printf "    ${GREEN}•${RESET} ${BOLD}Cmd+F11${RESET}        ${DIM}→ Workplace fullscreen${RESET}\n"
   printf "    ${GREEN}•${RESET} ${BOLD}Cmd+Shift+F11${RESET}  ${DIM}→ Editor fullscreen focus${RESET}\n"
   printf "\n"
@@ -1548,4 +1548,3 @@ main() {
 
 parse_args "$@"
 main
-

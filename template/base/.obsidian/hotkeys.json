@@ -25,14 +25,14 @@
   ],
   "app:toggle-left-sidebar": [
     {
-      "modifiers": ["Mod", "Shift"],
+      "modifiers": ["Mod"],
       "key": "B"
     }
   ],
   "app:toggle-right-sidebar": [
     {
-      "modifiers": ["Mod", "Shift"],
-      "key": "L"
+      "modifiers": ["Mod", "Alt"],
+      "key": "B"
     }
   ],
   "editing-toolbar:fullscreen-focus": [
